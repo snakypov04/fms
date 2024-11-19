@@ -20,6 +20,14 @@ export default function Login() {
     router.push('/(auth)/registerFarmer');
   };
 
+  const navigateToBuyerPage = () => {
+    router.push('/Products'); // Navigate to the Buyer section
+  };
+
+  const navigateToFarmerPage = () => {
+    router.push('/farmer'); // Navigate to the Farmer section
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Authorise</Text>
@@ -51,6 +59,15 @@ export default function Login() {
       </TouchableOpacity>
       <TouchableOpacity style={styles.registerButton} onPress={navigateToFarmerRegistration}>
         <Text style={styles.registerButtonText}>Register as a Farmer</Text>
+      </TouchableOpacity>
+
+      {/* Temporary Navigation Buttons */}
+      <Text style={styles.dividerText}>Temporary Navigation:</Text>
+      <TouchableOpacity style={styles.temporaryButton} onPress={navigateToBuyerPage}>
+        <Text style={styles.temporaryButtonText}>Go to Buyer Page</Text>
+      </TouchableOpacity>
+      <TouchableOpacity style={styles.temporaryButton} onPress={navigateToFarmerPage}>
+        <Text style={styles.temporaryButtonText}>Go to Farmer Page</Text>
       </TouchableOpacity>
     </View>
   );
@@ -108,6 +125,18 @@ const styles = StyleSheet.create({
   },
   registerButtonText: {
     color: '#4CAF50',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  temporaryButton: {
+    backgroundColor: '#E0E0E0',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginVertical: 8,
+  },
+  temporaryButtonText: {
+    color: '#000',
     fontSize: 16,
     fontWeight: 'bold',
   },
