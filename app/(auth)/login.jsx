@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { getProfile, login } from '../../api-service';
+import { getProfile, login } from '../../api/auth';
 
 export default function Login() {
   const [email, setEmail] = useState('');

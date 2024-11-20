@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker'; // For avatar upload
-import { getProfile, updateProfile } from '../../api-service';
+import { getProfile, updateProfile } from '../../api/auth';
 
 export default function Profile() {
   const [userData, setUserData] = useState({

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getData, storeData } from '../utils/asyncStorage';
 
 const apiUrl = "http://85.198.90.80:8000/api/v1";
 
@@ -14,10 +15,8 @@ export const login = async (email, password) => {
         });
         const { refresh, access } = response.data;
 
-        localStorage.setItem("refresh", refresh);
-        localStorage.setItem("access", access);
-        console.log(localStorage.getItem("access"))
-        console.log(localStorage.getItem("refresh"))
+        storeData("refresh", refresh);
+        storeData("access", access);
 
         return { refresh, access };
     } catch (error) {
@@ -28,7 +27,7 @@ export const login = async (email, password) => {
 
 const refreshAccessToken = async () => {
     try {
-        const refresh = localStorage.getItem("refresh");
+        const refresh = getData("refresh");
         if (!refresh) throw new Error("Refresh token is missing");
 
         const response = await apiClient.post("/token/refresh/", {
@@ -36,7 +35,7 @@ const refreshAccessToken = async () => {
         });
         const { access } = response.data;
 
-        localStorage.setItem("access", access);
+        storeData("access", access);
         return access;
     } catch (error) {
         console.error("Error refreshing access token:", error.message);
@@ -69,7 +68,7 @@ apiClient.interceptors.response.use(
 );
 
 apiClient.interceptors.request.use((config) => {
-    const access = localStorage.getItem("access");
+    const access = getData("access");
     if (access) {
         config.headers["Authorization"] = `Bearer ${access}`;
     }
