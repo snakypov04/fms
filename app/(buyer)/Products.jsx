@@ -148,7 +148,10 @@ export default function Products() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.categoryRow}
+        style={{
+          maxHeight: "fit-content",
+          marginBottom: "7px",
+        }}
       >
         {categories.map((category) => (
           <TouchableOpacity
@@ -240,12 +243,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: "#fff",
     fontSize: 16,
-  },
-  categoryRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 10,
-    paddingHorizontal: 5,
   },
   categoryButton: {
     backgroundColor: "#fff",
