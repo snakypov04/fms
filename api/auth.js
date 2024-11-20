@@ -1,11 +1,5 @@
-import axios from "axios";
 import { getData, storeData } from "../utils/asyncStorage";
-
-const apiUrl = "http://85.198.90.80:8000/api/v1";
-
-const apiClient = axios.create({
-	baseURL: apiUrl,
-});
+import apiClient from "./config";
 
 export const login = async (email, password) => {
 	try {
@@ -27,13 +21,13 @@ export const login = async (email, password) => {
 
 export const register = async (data) => {
 	try {
-        console.log(data)
+		console.log(data);
 		const response = await apiClient.post("/register/", {
 			email: data.email,
 			first_name: data.first_name,
 			last_name: data.last_name,
 			password: data.password,
-            phone: data.phone,
+			phone: data.phone,
 			role: data.role,
 		});
 
