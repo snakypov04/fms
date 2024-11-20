@@ -15,8 +15,8 @@ export const login = async (email, password) => {
         });
         const { refresh, access } = response.data;
 
-        storeData("refresh", refresh);
-        storeData("access", access);
+        await storeData("refresh", refresh);
+        await storeData("access", access);
 
         return { refresh, access };
     } catch (error) {
@@ -27,7 +27,7 @@ export const login = async (email, password) => {
 
 const refreshAccessToken = async () => {
     try {
-        const refresh = getData("refresh");
+        const refresh = await getData("refresh");
         if (!refresh) throw new Error("Refresh token is missing");
 
         const response = await apiClient.post("/token/refresh/", {
@@ -35,7 +35,7 @@ const refreshAccessToken = async () => {
         });
         const { access } = response.data;
 
-        storeData("access", access);
+        await storeData("access", access);
         return access;
     } catch (error) {
         console.error("Error refreshing access token:", error.message);
@@ -67,8 +67,8 @@ apiClient.interceptors.response.use(
     }
 );
 
-apiClient.interceptors.request.use((config) => {
-    const access = getData("access");
+apiClient.interceptors.request.use(async (config) => {
+    const access = await getData("access");
     if (access) {
         config.headers["Authorization"] = `Bearer ${access}`;
     }
