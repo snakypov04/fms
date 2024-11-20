@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { Picker } from '@react-native-picker/picker';
 import {
   View,
   Text,
@@ -9,45 +10,97 @@ import {
   ScrollView,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker'; // For avatar upload
+import { getProfile, updateProfile } from '../../api-service';
 
 export default function Profile() {
-  // State to manage profile fields
-  const [avatar, setAvatar] = useState(null);
-  const [name, setName] = useState('');
-  const [surname, setSurname] = useState('');
-  const [email, setEmail] = useState('example@example.com'); // Email from registration
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('');
+  const [userData, setUserData] = useState({
+    first_name: '',
+    last_name: '',
+    email: 'example@example.com',
+    phone: '',
+    delivery_address: '',
+    payment_method: '',
+    avatar: null,
+  });
 
-  // Function to handle avatar upload
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await getProfile(); // Await the profile data
+        console.log('Fetched Profile Data:', data);
+
+        if (data) {
+          setUserData((prevState) => ({
+            ...prevState, // Preserve the existing state
+            first_name: data.first_name || '', // Update the 'name' field
+            last_name: data.last_name || '', // Update the 'surname' field
+            email: data.email || 'example@example.com', // Update the 'email' field
+            phone: data.phone || '', // Update the 'phone' field
+            delivery_address: data.info?.delivery_address || '', // Update the 'address' field (handle nested objects safely)
+            payment_method: data.info?.payment_method || '', // Update the 'paymentMethod' field
+            avatar: data.avatar || '',
+          }));
+        }
+      } catch (error) {
+        console.error('Error fetching profile:', error.message);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+
+  const handleInputChange = (field, value) => {
+    setUserData((prevState) => ({
+      ...prevState,
+      [field]: value,
+    }));
+  };
+
+
   const handleAvatarUpload = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
-
-    if (!result.canceled) {
-      setAvatar(result.assets[0].uri); // Set the selected image URI as avatar
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1], // 
+        quality: 1, // Highest quality
+      });
+  
+      if (!result.canceled) {
+        const avatarUri = result.assets[0].uri; // Get the URI of the selected image
+  
+        // Update the avatar in userData
+        setUserData((prevState) => ({
+          ...prevState,
+          avatar: avatarUri, // Update the avatar field
+        }));
+  
+        console.log('Avatar updated to:', avatarUri); // Debugging log
+      } else {
+        console.log('Image picker canceled');
+      }
+    } catch (error) {
+      console.error('Error uploading avatar:', error.message);
     }
   };
 
   // Simulate saving the profile to a database
-  const saveProfile = () => {
+  const saveProfile = async () => {
     const profileData = {
-      name,
-      surname,
-      email,
-      phone,
-      address,
-      paymentMethod,
-      avatar,
+      first_name: userData.first_name,
+      last_name: userData.last_name,
+      email: userData.email,
+      phone: userData.phone,
+      delivery_address: userData.delivery_address,
+      payment_method: userData.payment_method,
+      avatar: userData.avatar,
     };
 
+    updateProfile(profileData)
+
     console.log('Saving profile to database:', profileData);
-    alert('Profile saved successfully!');
+    // alert('Profile saved successfully!');
   };
 
   return (
@@ -56,7 +109,7 @@ export default function Profile() {
       <View style={styles.avatarContainer}>
         <TouchableOpacity onPress={handleAvatarUpload}>
           <Image
-            source={avatar ? { uri: avatar } : require('../../assets/images/default-avatar.png')}
+            source={userData.avatar ? { uri: userData.avatar } : require('../../assets/images/default-avatar.png')}
             style={styles.avatar}
           />
           <Text style={styles.avatarText}>Upload Avatar</Text>
@@ -69,22 +122,22 @@ export default function Profile() {
         <TextInput
           style={styles.input}
           placeholder="Enter your name"
-          value={name}
-          onChangeText={setName}
+          value={userData.first_name}
+          onChangeText={(text) => handleInputChange('first_name', text)}
         />
 
         <Text style={styles.label}>Surname</Text>
         <TextInput
           style={styles.input}
           placeholder="Enter your surname"
-          value={surname}
-          onChangeText={setSurname}
+          value={userData.last_name}
+          onChangeText={(text) => handleInputChange('last_name', text)}
         />
 
         <Text style={styles.label}>Email</Text>
         <TextInput
           style={[styles.input, styles.disabledInput]}
-          value={email}
+          value={userData.email}
           editable={false}
         />
 
@@ -92,25 +145,33 @@ export default function Profile() {
         <TextInput
           style={styles.input}
           placeholder="Enter your phone number"
-          value={phone}
-          onChangeText={setPhone}
+          value={userData.phone}
+          onChangeText={(text) => handleInputChange('phone', text)}
         />
 
         <Text style={styles.label}>Delivery Address</Text>
         <TextInput
           style={styles.input}
           placeholder="Enter your delivery address"
-          value={address}
-          onChangeText={setAddress}
+          value={userData.delivery_address}
+          onChangeText={(text) => handleInputChange('delivery_address', text)}
         />
 
-        <Text style={styles.label}>Payment Method</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your payment method"
-          value={paymentMethod}
-          onChangeText={setPaymentMethod}
-        />
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>Payment Method</Text>
+          <View style={styles.pickerContainer}>
+            <Picker
+              selectedValue={userData.payment_method} // Bind to the correct state
+              onValueChange={(value) => handleInputChange('payment_method', value)} // Update state on change
+              style={styles.picker}
+            >
+              <Picker.Item label="Select a payment method" value="" />
+              <Picker.Item label="Cash" value="Cash" />
+              <Picker.Item label="Card" value="Card" />
+              <Picker.Item label="QR" value="QR" />
+            </Picker>
+          </View>
+        </View>
       </View>
 
       {/* Save Button */}

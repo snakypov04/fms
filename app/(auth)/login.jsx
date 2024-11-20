@@ -1,15 +1,32 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import { getProfile, login } from '../../api-service';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const router = useRouter();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     console.log('Email:', email, 'Password:', password);
-    // Add login logic here
+    try{
+      await login(email, password)
+    }catch (error){
+      console.error(error)
+      throw error
+    }
+
+    const {role} = await getProfile()
+    console.log(role)
+    if (role === "Farmer"){
+      navigateToFarmerPage()
+    }else if(role === "Buyer"){
+      navigateToBuyerPage()
+    }else{
+      throw error
+    }
+    
   };
 
   const navigateToBuyerRegistration = () => {
