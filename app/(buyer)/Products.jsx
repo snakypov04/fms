@@ -1,13 +1,57 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, FlatList, TouchableOpacity, Image, StyleSheet, ScrollView } from 'react-native';
+import {
+  View,
+  Text,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  ScrollView,
+} from 'react-native';
 
 // Sample data for products
 const products = [
-  { id: 1, title: 'Fresh Apples', farm: 'Sunny Farm', image: require('../../assets/images/apple.jpg'), cost: 5.99, category: 'Fruits' },
-  { id: 2, title: 'Organic Carrots', farm: 'Green Valley', image: require('../../assets/images/carrot.jpg'), cost: 3.49, category: 'Vegetables' },
-  { id: 3, title: 'Free Range Eggs', farm: 'Hilltop Farm', image: require('../../assets/images/eggs.jpg'), cost: 6.99, category: 'Dairy' },
-  { id: 4, title: 'Fresh Milk', farm: 'Dairy Delight', image: require('../../assets/images/milk.jpg'), cost: 4.99, category: 'Dairy' },
-  { id: 5, title: 'Juicy Oranges', farm: 'Citrus Grove', image: require('../../assets/images/orange.jpg'), cost: 4.49, category: 'Fruits' },
+  {
+    id: 1,
+    title: 'Fresh Apples',
+    farm: 'Sunny Farm',
+    image: require('../../assets/images/apple.jpg'),
+    cost: 5.99,
+    category: 'Fruits',
+  },
+  {
+    id: 2,
+    title: 'Organic Carrots',
+    farm: 'Green Valley',
+    image: require('../../assets/images/carrot.jpg'),
+    cost: 3.49,
+    category: 'Vegetables',
+  },
+  {
+    id: 3,
+    title: 'Free Range Eggs',
+    farm: 'Hilltop Farm',
+    image: require('../../assets/images/eggs.jpg'),
+    cost: 6.99,
+    category: 'Dairy',
+  },
+  {
+    id: 4,
+    title: 'Fresh Milk',
+    farm: 'Dairy Delight',
+    image: require('../../assets/images/milk.jpg'),
+    cost: 4.99,
+    category: 'Dairy',
+  },
+  {
+    id: 5,
+    title: 'Juicy Oranges',
+    farm: 'Citrus Grove',
+    image: require('../../assets/images/orange.jpg'),
+    cost: 4.49,
+    category: 'Fruits',
+  },
 ];
 
 const categories = ['All', 'Fruits', 'Vegetables', 'Dairy'];
@@ -18,8 +62,11 @@ export default function Products() {
 
   // Filter products by search query and category
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.title.toLowerCase().includes(searchQuery.toLowerCase()) || product.farm.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
+    const matchesSearch =
+      product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.farm.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory =
+      selectedCategory === 'All' || product.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
@@ -47,7 +94,11 @@ export default function Products() {
       />
 
       {/* Category Filter Row */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryRow}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator
+        contentContainerStyle={styles.categoryRow}
+      >
         {categories.map((category) => (
           <TouchableOpacity
             key={category}
@@ -70,12 +121,16 @@ export default function Products() {
       </ScrollView>
 
       {/* Product List */}
-      <FlatList
-        data={filteredProducts}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderProductCard}
-        contentContainerStyle={styles.productList}
-      />
+      {filteredProducts.length > 0 ? (
+        <FlatList
+          data={filteredProducts}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderProductCard}
+          contentContainerStyle={styles.productList}
+        />
+      ) : (
+        <Text style={styles.emptyMessage}>No products match your filters.</Text>
+      )}
     </View>
   );
 }
@@ -97,7 +152,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   categoryRow: {
-    marginBottom: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+    paddingHorizontal: 5,
   },
   categoryButton: {
     backgroundColor: '#fff',
@@ -106,7 +164,7 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 16,
-    marginRight: 10,
+    marginHorizontal: 5,
   },
   selectedCategoryButton: {
     backgroundColor: '#4CAF50',
@@ -118,6 +176,7 @@ const styles = StyleSheet.create({
   },
   selectedCategoryButtonText: {
     color: '#fff',
+    fontWeight: 'bold',
   },
   productList: {
     paddingBottom: 20,
@@ -130,6 +189,7 @@ const styles = StyleSheet.create({
     borderColor: '#ccc',
     marginBottom: 10,
     overflow: 'hidden',
+    elevation: 3, // Add shadow for Android
   },
   productImage: {
     width: 100,
@@ -157,5 +217,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#4CAF50',
+  },
+  emptyMessage: {
+    textAlign: 'center',
+    fontSize: 16,
+    color: '#666',
+    marginTop: 20,
   },
 });
