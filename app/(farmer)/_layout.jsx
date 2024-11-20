@@ -1,14 +1,17 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Profile from './Profile';
 import Farms from './Farms';
 import Inventory from './Inventory';
 import Orders from './Orders';
+import FarmDetails from './FarmDetails'; // Import the new page
 import { Ionicons } from '@expo/vector-icons';
 
 const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
-export default function _layout() {
+function FarmerTabs() {
   return (
     <Tab.Navigator
       initialRouteName="Farms" // Default to Farms tab
@@ -24,8 +27,6 @@ export default function _layout() {
             iconName = focused ? 'cube' : 'cube-outline';
           } else if (route.name === 'Orders') {
             iconName = focused ? 'cart' : 'cart-outline';
-          } else if (route.name === 'Statistics') {
-            iconName = focused ? 'stats-chart' : 'stats-chart-outline';
           }
 
           return <Ionicons name={iconName} size={size} color={color} />;
@@ -35,17 +36,27 @@ export default function _layout() {
         headerShown: false,
       })}
     >
-      {/* Left Tab: Profile */}
       <Tab.Screen name="Profile" component={Profile} />
-
-      {/* Center Tab: Farms */}
       <Tab.Screen name="Farms" component={Farms} />
-
-      {/* Right Tab: Inventory */}
       <Tab.Screen name="Inventory" component={Inventory} />
-
-      {/* Additional Tab: Orders */}
       <Tab.Screen name="Orders" component={Orders} />
     </Tab.Navigator>
+  );
+}
+
+export default function _layout() {
+  return (
+    <Stack.Navigator>
+      <Stack.Screen
+        name="FarmerTabs"
+        component={FarmerTabs}
+        options={{ headerShown: false }} // Hide header for tabs
+      />
+      <Stack.Screen
+        name="FarmDetails"
+        component={FarmDetails}
+        options={{ title: 'Farm Details' }} // Set title for FarmDetails
+      />
+    </Stack.Navigator>
   );
 }

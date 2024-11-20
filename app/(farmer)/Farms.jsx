@@ -1,59 +1,42 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Button, Alert } from 'react-native';
+import React, { useState } from "react";
+import { View, Text, StyleSheet, Button, Alert, TouchableOpacity } from "react-native";
+import { router, useRouter } from 'expo-router';
 
-const FarmsTab = () => {
-  // Updated API response (single farm object)
+
+const FarmsTab = ({ navigation }) => {
+  const router = useRouter();
+
   const farmData = {
     id: 2,
     name: "Green Meadows",
     address: "456 Farm Road",
-    geo_loc: "40.56789, -90.56789",
-    size: "100 acres",
     crop_types: "Rice, Soybean",
     is_verified: false,
-    created_at: "2024-11-19T19:31:50.251523Z",
-    updated_at: "2024-11-19T19:31:50.251889Z",
   };
 
-  const [selectedFarm, setSelectedFarm] = useState(null);
-
-  // Handle selecting a farm
-  const handleSelectFarm = () => {
-    setSelectedFarm(farmData);
-    Alert.alert("Farm Selected", `You chose ${farmData.name} to work on.`);
+  // Handle navigating to the Farm Details page
+  const handleViewDetails = () => {
+    console.log("Hello")
+    router.push("/FarmDetails", { farm: farmData });
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Farm Details</Text>
+      <Text style={styles.title}>Farm Overview</Text>
       <View style={styles.farmCard}>
         <Text style={styles.farmName}>{farmData.name}</Text>
         <Text style={styles.farmDetail}>Address: {farmData.address}</Text>
-        <Text style={styles.farmDetail}>Size: {farmData.size}</Text>
         <Text style={styles.farmDetail}>Crops: {farmData.crop_types}</Text>
-        <Text style={styles.farmDetail}>Geo Location: {farmData.geo_loc}</Text>
         <Text style={styles.farmDetail}>
           Verified: {farmData.is_verified ? "Yes" : "No"}
         </Text>
-        <Text style={styles.farmDetail}>
-          Created At: {new Date(farmData.created_at).toLocaleString()}
-        </Text>
-        <Text style={styles.farmDetail}>
-          Updated At: {new Date(farmData.updated_at).toLocaleString()}
-        </Text>
-        <Button
-          title="Work on this Farm"
-          onPress={handleSelectFarm}
-          color="#4CAF50"
-        />
+        <TouchableOpacity
+          style={styles.viewDetailsButton}
+          onPress={handleViewDetails}
+        >
+          <Text style={styles.viewDetailsButtonText}>View Details</Text>
+        </TouchableOpacity>
       </View>
-      {selectedFarm && (
-        <View style={styles.selectedFarm}>
-          <Text style={styles.selectedFarmText}>
-            Currently working on: {selectedFarm.name}
-          </Text>
-        </View>
-      )}
     </View>
   );
 };
@@ -61,45 +44,48 @@ const FarmsTab = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
+    padding: 15,
     backgroundColor: "#f4f4f4",
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 20,
     textAlign: "center",
+    color: "#333",
   },
   farmCard: {
     backgroundColor: "#fff",
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 10,
+    borderRadius: 10,
+    padding: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 5,
+    elevation: 4,
   },
   farmName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 5,
+    marginBottom: 10,
+    color: "#2d6a4f",
   },
   farmDetail: {
-    fontSize: 14,
-    marginBottom: 5,
+    fontSize: 16,
+    marginBottom: 8,
+    color: "#555",
   },
-  selectedFarm: {
-    marginTop: 20,
+  viewDetailsButton: {
+    marginTop: 15,
+    backgroundColor: "#2d6a4f",
     padding: 10,
-    backgroundColor: "#4CAF50",
     borderRadius: 8,
+    alignItems: "center",
   },
-  selectedFarmText: {
+  viewDetailsButtonText: {
     color: "#fff",
     fontSize: 16,
-    textAlign: "center",
+    fontWeight: "bold",
   },
 });
 
