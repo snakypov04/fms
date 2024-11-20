@@ -52,6 +52,22 @@ const products = [
     cost: 4.49,
     category: 'Fruits',
   },
+  {
+    id: 6,
+    title: 'Juicy Oranges',
+    farm: 'Citrus Grove',
+    image: require('../../assets/images/orange.jpg'),
+    cost: 4.49,
+    category: 'Fruits',
+  },
+  {
+    id: 7,
+    title: 'Juicy Oranges',
+    farm: 'Citrus Grove',
+    image: require('../../assets/images/orange.jpg'),
+    cost: 4.49,
+    category: 'Fruits',
+  },
 ];
 
 const categories = ['All', 'Fruits', 'Vegetables', 'Dairy'];
@@ -154,7 +170,8 @@ const styles = StyleSheet.create({
   categoryRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    marginTop: 10,
+    marginBottom: 10,
     paddingHorizontal: 5,
   },
   categoryButton: {

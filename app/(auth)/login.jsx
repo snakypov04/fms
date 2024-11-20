@@ -21,11 +21,11 @@ export default function Login() {
   };
 
   const navigateToBuyerPage = () => {
-    router.push('/Products'); // Navigate to the Buyer section
+    router.push('/(buyer)/Profile'); // Navigate to the Buyer section
   };
 
   const navigateToFarmerPage = () => {
-    router.push('/farmer'); // Navigate to the Farmer section
+    router.push('/(farmer)/Profile'); // Navigate to the Farmer section
   };
 
   return (

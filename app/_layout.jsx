@@ -34,8 +34,8 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)/register" options={{ headerShown: false }} />
-        <Stack.Screen name="(farmer)/dashboard" options={{ headerShown: false }} />
-        <Stack.Screen name="(buyer)/home" options={{ headerShown: false }} />
+        <Stack.Screen name="(farmer)" options={{ headerShown: false }} />
+        <Stack.Screen name="(buyer)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
