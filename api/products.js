@@ -1,9 +1,9 @@
 import apiClient from "./config";
 
-const getProducts = async () => {
+export const getProducts = async () => {
 	try {
 		const response = await apiClient.get("/products/");
-		return response.data;
+		return response;
 	} catch (e) {
 		throw Error();
 	}
