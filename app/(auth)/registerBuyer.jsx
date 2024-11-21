@@ -9,7 +9,7 @@ import {
 import { useRouter } from "expo-router";
 import CustomButton from "../../components/CustomButton"; // Importing the custom button
 import { Ionicons } from "@expo/vector-icons"; // For the eye icon
-import { registerBuyer } from "../../api/auth";
+import { register } from "../../api/auth";
 
 export default function RegisterBuyer() {
 	const [registerData, setRegisterData] = useState({
@@ -36,7 +36,7 @@ export default function RegisterBuyer() {
 			phone: registerData.phone,
       role: "Buyer"
 		};
-		await registerBuyer(data);
+		await register(data);
 		router.push("/(auth)/login"); // Navigate back to login after successful registration
 	};
 	const handleInputChange = (field, value) => {

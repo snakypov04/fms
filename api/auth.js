@@ -1,10 +1,9 @@
-import axios from "axios";
 import { getData, storeData } from "../utils/asyncStorage";
-import { apiUrl, apiClient } from "./config";
+import { apiClient } from "./config";
 
 export const login = async (email, password) => {
 	try {
-		const response = await axios.post(apiUrl + "/token/", {
+		const response = await apiClient.post("/token/", {
 			email: email,
 			password: password,
 		});
@@ -23,7 +22,7 @@ export const login = async (email, password) => {
 export const register = async (data) => {
 	try {
 		console.log(data);
-		const response = await axios.post(apiUrl + "/register/", {
+		const response = await apiClient.post("/register/", {
 			email: data.email,
 			first_name: data.first_name,
 			last_name: data.last_name,
