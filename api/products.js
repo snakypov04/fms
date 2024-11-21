@@ -31,4 +31,3 @@ export const getBasket = async () => {
 		throw Error(`Error getting basket: ${e}`);
 	}
 };
-
