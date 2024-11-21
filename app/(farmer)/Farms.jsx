@@ -1,42 +1,44 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, Button, Alert, TouchableOpacity } from "react-native";
-import { router, useRouter } from 'expo-router';
+import React, { useEffect, useState } from "react";
+import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { getFarms } from "../../api/farms";
 
+const FarmsTab = () => {
+  const [farms, setFarms] = useState([]);
+  const navigation = useNavigation();
 
-const FarmsTab = ({ navigation }) => {
-  const router = useRouter();
+  useEffect(() => {
+    const fetchFarms = async () => {
+      const farmsData = await getFarms();
+      console.log(farmsData);
+      setFarms(farmsData);
+    };
+    fetchFarms();
+  }, []);
 
-  const farmData = {
-    id: 2,
-    name: "Green Meadows",
-    address: "456 Farm Road",
-    crop_types: "Rice, Soybean",
-    is_verified: false,
-  };
-
-  // Handle navigating to the Farm Details page
-  const handleViewDetails = () => {
-    console.log("Hello")
-    router.push("/FarmDetails", { farm: farmData });
+  const handleViewDetails = (farmId) => {
+    navigation.navigate("FarmDetails", { farm_id: farmId });
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Farm Overview</Text>
-      <View style={styles.farmCard}>
-        <Text style={styles.farmName}>{farmData.name}</Text>
-        <Text style={styles.farmDetail}>Address: {farmData.address}</Text>
-        <Text style={styles.farmDetail}>Crops: {farmData.crop_types}</Text>
-        <Text style={styles.farmDetail}>
-          Verified: {farmData.is_verified ? "Yes" : "No"}
-        </Text>
-        <TouchableOpacity
-          style={styles.viewDetailsButton}
-          onPress={handleViewDetails}
-        >
-          <Text style={styles.viewDetailsButtonText}>View Details</Text>
-        </TouchableOpacity>
-      </View>
+      {farms.map((farm) => (
+        <View key={farm.id} style={styles.farmCard}>
+          <Text style={styles.farmName}>{farm.name}</Text>
+          <Text style={styles.farmDetail}>Address: {farm.address}</Text>
+          <Text style={styles.farmDetail}>Crops: {farm.crop_types}</Text>
+          <Text style={styles.farmDetail}>
+            Verified: {farm.is_verified ? "Yes" : "No"}
+          </Text>
+          <TouchableOpacity
+            style={styles.viewDetailsButton}
+            onPress={() => handleViewDetails(farm.id)}
+          >
+            <Text style={styles.viewDetailsButtonText}>View Details</Text>
+          </TouchableOpacity>
+        </View>
+      ))}
     </View>
   );
 };
@@ -63,6 +65,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 4,
+    marginBottom: 15,
   },
   farmName: {
     fontSize: 20,
