@@ -10,8 +10,9 @@ import {
 	ScrollView,
 	Modal,
 	Animated,
+  Alert
 } from "react-native";
-import { getProducts } from "../../api/products";
+import { getProducts, addProduct } from "../../api/products";
 
 const categories = ["All", "Fruits", "Vegetables", "Dairy", "Bakery", "Meat"];
 
@@ -19,7 +20,6 @@ export default function Products() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedCategory, setSelectedCategory] = useState("All");
 	const [products, setProducts] = useState([]);
-	const [cart, setCart] = useState([]);
 	const [selectedProduct, setSelectedProduct] = useState(null);
 	const [modalVisible, setModalVisible] = useState(false);
 	const [buttonScale] = useState(new Animated.Value(1)); // Button animation
@@ -39,7 +39,6 @@ export default function Products() {
 					remaining: product.stock_quantity,
 					description: product.description || "No description available.",
 				}));
-        console.log("no coding", formattedProducts)
 				setProducts(formattedProducts);
 			} catch (error) {
 				console.error("Failed to fetch products:", error);
@@ -58,20 +57,20 @@ export default function Products() {
 		return matchesSearch && matchesCategory;
 	});
 
-	const addToCart = (product) => {
-		const existingItem = cart.find((item) => item.id === product.id);
-		if (existingItem) {
-			setCart(
-				cart.map((item) =>
-					item.id === product.id
-						? { ...item, quantity: item.quantity + 1 }
-						: item
-				)
-			);
-		} else {
-			setCart([...cart, { ...product, quantity: 1 }]);
+	const addToCart = async (product) => {
+		try {
+			const response = await addProduct({
+				product_id: product.id,
+				quantity: 1,
+			});
+
+      console.log(response.data)
+
+			Alert.alert("Success", `${product.title} added to cart!`);
+		} catch (error) {
+			console.error("Failed to add product to cart:", error);
+			Alert.alert("Error", "Failed to add product to cart. Please try again.");
 		}
-		alert(`${product.title} added to cart!`);
 	};
 
 	const openProductDetails = (product) => {
