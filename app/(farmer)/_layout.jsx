@@ -46,17 +46,8 @@ function FarmerTabs() {
 
 export default function _layout() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="FarmerTabs"
-        component={FarmerTabs}
-        options={{ headerShown: false }} // Hide header for tabs
-      />
-      <Stack.Screen
-        name="FarmDetails"
-        component={FarmDetails}
-        options={{ title: 'Farm Details' }} // Set title for FarmDetails
-      />
-    </Stack.Navigator>
+    <Stack>
+      <Stack.Screen name="FarmDetails" options={{ headerShown: false }} />
+    </Stack>
   );
 }

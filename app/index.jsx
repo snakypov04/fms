@@ -6,10 +6,6 @@ import CustomButton from '../components/CustomButton'; // Importing the custom b
 export default function Home() {
   const router = useRouter();
 
-  const handleNavigateToLogin = () => {
-    router.push('/(auth)/login'); // Navigates to the login page
-  };
-
   return (
     <View style={styles.container}>
       <Image source={require('../assets/images/logo.png')} style={styles.logo} />
@@ -18,7 +14,7 @@ export default function Home() {
       {/* Use the custom Button component */}
       <CustomButton 
         title="Get Started" 
-        onPress={handleNavigateToLogin} 
+        onPress={() => router.push('login')} 
         style={styles.button} 
       />
     </View>

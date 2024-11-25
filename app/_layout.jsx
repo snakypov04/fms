@@ -31,11 +31,17 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+        {/* Main entry point */}
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)/login" options={{ headerShown: false }} />
-        <Stack.Screen name="(auth)/register" options={{ headerShown: false }} />
-        <Stack.Screen name="(farmer)" options={{ headerShown: false }} />
+
+        {/* Authentication screens */}
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+
+        {/* Buyer layout */}
         <Stack.Screen name="(buyer)" options={{ headerShown: false }} />
+
+        {/* Farmer layout */}
+        <Stack.Screen name="(farmer)" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>

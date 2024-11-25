@@ -20,29 +20,13 @@ export default function Login() {
     const {role} = await getProfile()
     console.log(role)
     if (role === "Farmer"){
-      navigateToFarmerPage()
+      router.push('/(farmer)/Profile');
     }else if(role === "Buyer"){
-      navigateToBuyerPage()
+      router.push('/(buyer)/Profile');
     }else{
       throw error
     }
     
-  };
-
-  const navigateToBuyerRegistration = () => {
-    router.push('/(auth)/registerBuyer');
-  };
-
-  const navigateToFarmerRegistration = () => {
-    router.push('/(auth)/registerFarmer');
-  };
-
-  const navigateToBuyerPage = () => {
-    router.push('/(buyer)/Profile'); // Navigate to the Buyer section
-  };
-
-  const navigateToFarmerPage = () => {
-    router.push('/(farmer)/Profile'); // Navigate to the Farmer section
   };
 
   return (
@@ -71,19 +55,19 @@ export default function Login() {
       <Text style={styles.dividerText}>Don't have an account?</Text>
 
       {/* Registration Buttons */}
-      <TouchableOpacity style={styles.registerButton} onPress={navigateToBuyerRegistration}>
+      <TouchableOpacity style={styles.registerButton} onPress={() => router.push('/(auth)/registerBuyer')}>
         <Text style={styles.registerButtonText}>Register as a Buyer</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.registerButton} onPress={navigateToFarmerRegistration}>
+      <TouchableOpacity style={styles.registerButton} onPress={() => router.push('/(auth)/registerFarmer')}>
         <Text style={styles.registerButtonText}>Register as a Farmer</Text>
       </TouchableOpacity>
 
       {/* Temporary Navigation Buttons */}
       <Text style={styles.dividerText}>Temporary Navigation:</Text>
-      <TouchableOpacity style={styles.temporaryButton} onPress={navigateToBuyerPage}>
+      <TouchableOpacity style={styles.temporaryButton} onPress={() => router.push('/(buyer)/Profile')}>
         <Text style={styles.temporaryButtonText}>Go to Buyer Page</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.temporaryButton} onPress={navigateToFarmerPage}>
+      <TouchableOpacity style={styles.temporaryButton} onPress={() => router.push('/(farmer)/Profile')}>
         <Text style={styles.temporaryButtonText}>Go to Farmer Page</Text>
       </TouchableOpacity>
     </View>
