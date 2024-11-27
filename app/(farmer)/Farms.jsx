@@ -6,6 +6,7 @@ import {
 	TouchableOpacity,
 	ScrollView,
 	TextInput,
+	Alert,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getFarms, createFarm } from "../../api/farms"; // Assuming createFarm is available in your API
@@ -26,7 +27,6 @@ const FarmsTab = () => {
 	useEffect(() => {
 		const fetchFarms = async () => {
 			const farmsData = await getFarms();
-			console.log(farmsData);
 			setFarms(farmsData);
 		};
 		fetchFarms();
@@ -59,74 +59,74 @@ const FarmsTab = () => {
 	};
 
 	return (
-			<ScrollView style={styles.container}>
-				<Text style={styles.title}>Farm Overview</Text>
+		<ScrollView style={styles.container}>
+			<Text style={styles.title}>Farm Overview</Text>
 
-				<TouchableOpacity
-					style={styles.createButton}
-					onPress={() => setModalVisible(true)}
-				>
-					<Text style={styles.createButtonText}>Create Farm</Text>
-				</TouchableOpacity>
+			<TouchableOpacity
+				style={styles.createButton}
+				onPress={() => setModalVisible(true)}
+			>
+				<Text style={styles.createButtonText}>Create Farm</Text>
+			</TouchableOpacity>
 
-				{farms.map((farm) => (
-					<View key={farm.id} style={styles.farmCard}>
-						<Text style={styles.farmName}>{farm.name}</Text>
-						<Text style={styles.farmDetail}>Address: {farm.address}</Text>
-						<Text style={styles.farmDetail}>Crops: {farm.crop_types}</Text>
-						<Text style={styles.farmDetail}>
-							Verified: {farm.is_verified ? "Yes" : "No"}
-						</Text>
+			{farms.map((farm) => (
+				<View key={farm.id} style={styles.farmCard}>
+					<Text style={styles.farmName}>{farm.name}</Text>
+					<Text style={styles.farmDetail}>Address: {farm.address}</Text>
+					<Text style={styles.farmDetail}>Crops: {farm.crop_types}</Text>
+					<Text style={styles.farmDetail}>
+						Verified: {farm.is_verified ? "Yes" : "No"}
+					</Text>
+					<TouchableOpacity
+						style={styles.viewDetailsButton}
+						onPress={() => handleViewDetails(farm.id)}
+					>
+						<Text style={styles.viewDetailsButtonText}>View Details</Text>
+					</TouchableOpacity>
+				</View>
+			))}
+
+			<Modal
+				animationType="slide"
+				transparent={true}
+				visible={modalVisible}
+				onRequestClose={() => setModalVisible(false)}
+			>
+				<View style={styles.modalContainer}>
+					<View style={styles.modalContent}>
+						<Text style={styles.modalTitle}>Create Farm</Text>
+
+						{["name", "address", "geo_loc", "size", "crop_types"].map(
+							(field) => (
+								<TextInput
+									key={field}
+									style={styles.input}
+									placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+									value={formData[field]}
+									onChangeText={(text) =>
+										setFormData((prev) => ({ ...prev, [field]: text }))
+									}
+								/>
+							)
+						)}
+
 						<TouchableOpacity
-							style={styles.viewDetailsButton}
-							onPress={() => handleViewDetails(farm.id)}
+							style={styles.saveButton}
+							onPress={handleCreateFarm}
 						>
-							<Text style={styles.viewDetailsButtonText}>View Details</Text>
+							<Text style={styles.saveButtonText}>Save</Text>
+						</TouchableOpacity>
+
+						<TouchableOpacity
+							style={styles.cancelButton}
+							onPress={() => setModalVisible(false)}
+						>
+							<Text style={styles.cancelButtonText}>Cancel</Text>
 						</TouchableOpacity>
 					</View>
-				))}
-
-				<Modal
-					animationType="slide"
-					transparent={true}
-					visible={modalVisible}
-					onRequestClose={() => setModalVisible(false)}
-				>
-					<View style={styles.modalContainer}>
-						<View style={styles.modalContent}>
-							<Text style={styles.modalTitle}>Create Farm</Text>
-
-							{["name", "address", "geo_loc", "size", "crop_types"].map(
-								(field) => (
-									<TextInput
-										key={field}
-										style={styles.input}
-										placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
-										value={formData[field]}
-										onChangeText={(text) =>
-											setFormData((prev) => ({ ...prev, [field]: text }))
-										}
-									/>
-								)
-							)}
-
-							<TouchableOpacity
-								style={styles.saveButton}
-								onPress={handleCreateFarm}
-							>
-								<Text style={styles.saveButtonText}>Save</Text>
-							</TouchableOpacity>
-
-							<TouchableOpacity
-								style={styles.cancelButton}
-								onPress={() => setModalVisible(false)}
-							>
-								<Text style={styles.cancelButtonText}>Cancel</Text>
-							</TouchableOpacity>
-						</View>
-					</View>
-				</Modal>
-			</ScrollView>
+				</View>
+			</Modal>
+		</ScrollView>
 	);
 };
 
