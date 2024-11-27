@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getFarms } from "../../api/farms";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const FarmsTab = () => {
   const [farms, setFarms] = useState([]);
@@ -21,7 +22,8 @@ const FarmsTab = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView>
+    <ScrollView style={styles.container}>
       <Text style={styles.title}>Farm Overview</Text>
       {farms.map((farm) => (
         <View key={farm.id} style={styles.farmCard}>
@@ -39,7 +41,8 @@ const FarmsTab = () => {
           </TouchableOpacity>
         </View>
       ))}
-    </View>
+    </ScrollView>
+    </SafeAreaView>
   );
 };
 
