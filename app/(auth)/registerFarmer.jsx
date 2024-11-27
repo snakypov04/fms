@@ -64,7 +64,7 @@ export default function RegisterFarmer() {
 
 	return (
 		<View style={styles.container}>
-			<Text style={styles.title}>Register as a Buyer</Text>
+			<Text style={styles.title}>Register as a Farmer</Text>
 			<TextInput
 				style={styles.input}
 				placeholder="First Name"

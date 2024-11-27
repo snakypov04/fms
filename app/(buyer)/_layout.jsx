@@ -2,41 +2,42 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Profile from './Profile';
 import Products from './Products';
-import Cart from './Cart'; // Replace Messages with Cart
+import Cart from './Cart';
 import { Ionicons } from '@expo/vector-icons';
 
 const Tab = createBottomTabNavigator();
 
-export default function _layout() {
+export default function BuyerLayout() {
   return (
     <Tab.Navigator
       initialRouteName="Products" // Default to Products tab
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
+          // Determine the icon based on route name
           let iconName;
-
-          if (route.name === 'Products') {
-            iconName = focused ? 'pricetags' : 'pricetags-outline';
-          } else if (route.name === 'Cart') {
-            iconName = focused ? 'cart' : 'cart-outline';
-          } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
+          switch (route.name) {
+            case 'Products':
+              iconName = focused ? 'pricetags' : 'pricetags-outline';
+              break;
+            case 'Cart':
+              iconName = focused ? 'cart' : 'cart-outline';
+              break;
+            case 'Profile':
+              iconName = focused ? 'person' : 'person-outline';
+              break;
+            default:
+              iconName = 'help-circle-outline'; // Fallback icon
           }
-
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: '#4CAF50',
-        tabBarInactiveTintColor: 'gray',
-        headerShown: false,
+        tabBarActiveTintColor: '#4CAF50', // Active tab color
+        tabBarInactiveTintColor: 'gray',  // Inactive tab color
+        headerShown: false,              // Disable default header
       })}
     >
-      {/* Left Tab: Profile */}
+      {/* Tabs */}
       <Tab.Screen name="Profile" component={Profile} />
-
-      {/* Center Tab: Products */}
       <Tab.Screen name="Products" component={Products} />
-
-      {/* Right Tab: Cart */}
       <Tab.Screen name="Cart" component={Cart} />
     </Tab.Navigator>
   );
