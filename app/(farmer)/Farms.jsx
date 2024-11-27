@@ -5,10 +5,11 @@ import {
 	StyleSheet,
 	TouchableOpacity,
 	ScrollView,
+	TextInput,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import { getFarms, createFarm } from "../../api/farms"; // Assuming createFarm is available in your API
+import { Modal } from "react-native-web";
 
 const FarmsTab = () => {
 	const [farms, setFarms] = useState([]);
@@ -58,7 +59,6 @@ const FarmsTab = () => {
 	};
 
 	return (
-		<SafeAreaView>
 			<ScrollView style={styles.container}>
 				<Text style={styles.title}>Farm Overview</Text>
 
@@ -127,7 +127,6 @@ const FarmsTab = () => {
 					</View>
 				</Modal>
 			</ScrollView>
-		</SafeAreaView>
 	);
 };
 
