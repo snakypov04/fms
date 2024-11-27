@@ -20,29 +20,33 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded) {
-      SplashScreen.hideAsync();
+      SplashScreen.hideAsync(); // Hide splash screen once fonts are loaded
     }
   }, [fontsLoaded]);
 
   if (!fontsLoaded) {
-    return null; // Keep splash screen visible until fonts are loaded
+    // Return a fallback component (can be a spinner or empty placeholder)
+    return null;
   }
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      {/* Root Navigator for the app */}
       <Stack>
-        {/* Main entry point */}
+        {/* Index route (entry point) */}
         <Stack.Screen name="index" options={{ headerShown: false }} />
 
-        {/* Authentication screens */}
+        {/* Authentication screens layout */}
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
 
-        {/* Buyer layout */}
+        {/* Buyer-specific layout */}
         <Stack.Screen name="(buyer)" options={{ headerShown: false }} />
 
-        {/* Farmer layout */}
+        {/* Farmer-specific layout */}
         <Stack.Screen name="(farmer)" options={{ headerShown: false }} />
       </Stack>
+
+      {/* Status bar for system UI */}
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
   );
