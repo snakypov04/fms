@@ -5,7 +5,7 @@ export const getFarms = async () => {
 		const response = await apiClient.get("/farms/");
 		return response.data;
 	} catch (e) {
-		throw Error();
+		throw Error(`Error getting farms: ${e}`);
 	}
 };
 
@@ -14,6 +14,26 @@ export const getFarm = async (farmId) => {
 		const response = await apiClient.get(`/farms/${farmId}`);
 		return response.data;
 	} catch (e) {
-		throw Error();
+		throw Error(`Error getting farm: ${e}`);
+	}
+};
+
+export const createFarm = async (data) => {
+	try {
+		const response = await apiClient.post("/farms/", {
+			name: data.name,
+			address: data.address,
+			geo_loc: data.geo_loc,
+			size: data.size,
+			crop_types: data.crop_types,
+		});
+		
+		if(response.status !== 403) {
+			throw Error(`could not create error: ${response.data}`)
+		}
+
+		return
+	} catch (e) {
+		throw Error(`Error creating farm: ${e}`);
 	}
 };
