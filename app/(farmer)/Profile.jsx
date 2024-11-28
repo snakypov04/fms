@@ -8,6 +8,8 @@ import {
   StyleSheet,
   ScrollView,
   Linking,
+  SafeAreaView,
+  RefreshControl
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 

@@ -10,7 +10,9 @@ import {
 	ScrollView,
 	Modal,
 	Animated,
-  Alert
+	SafeAreaView,
+	RefreshControl,
+ 	Alert
 } from "react-native";
 import { getProducts, addProduct } from "../../api/products";
 
@@ -24,29 +26,38 @@ export default function Products() {
 	const [modalVisible, setModalVisible] = useState(false);
 	const [buttonScale] = useState(new Animated.Value(1)); // Button animation
 
-	useEffect(() => {
-		const fetchProducts = async () => {
-			try {
-				const response = await getProducts();
-				// Map the API response to match the structure used in your component
-				const formattedProducts = response.data.map((product) => ({
-					id: product.id,
-					title: product.name,
-					farm: product.farm.name,
-					image: "", // Replace with a proper image URL or placeholder
-					cost: parseFloat(product.price),
-					category: product.category.name,
-					remaining: product.stock_quantity,
-					description: product.description || "No description available.",
-				}));
-				setProducts(formattedProducts);
-			} catch (error) {
-				console.error("Failed to fetch products:", error);
-			}
-		};
+	const [refreshing, setRefreshing] = useState(false);
 
+
+	const fetchProducts = async () => {
+		try {
+			const response = await getProducts();
+			// Map the API response to match the structure used in your component
+			const formattedProducts = response.data.map((product) => ({
+				id: product.id,
+				title: product.name,
+				farm: product.farm.name,
+				image: "", // Replace with a proper image URL or placeholder
+				cost: parseFloat(product.price),
+				category: product.category.name,
+				remaining: product.stock_quantity,
+				description: product.description || "No description available.",
+			}));
+			setProducts(formattedProducts);
+		} catch (error) {
+			console.error("Failed to fetch products:", error);
+		}
+	};
+
+	useEffect(() => {		
 		fetchProducts();
 	}, []);
+
+	const onRefresh = async () => {
+		setRefreshing(true);
+		await fetchProducts();
+		setRefreshing(false);
+	};
 
 	const filteredProducts = products.filter((product) => {
 		const matchesSearch =
@@ -99,6 +110,7 @@ export default function Products() {
 	};
 
 	const renderProductCard = ({ item }) => (
+		<SafeAreaView>
 		<TouchableOpacity
 			style={styles.card}
 			onPress={() => openProductDetails(item)}
@@ -123,97 +135,97 @@ export default function Products() {
 				</Animated.View>
 			</View>
 		</TouchableOpacity>
+		</SafeAreaView>
 	);
 
 	return (
-		<View style={styles.container}>
-			{/* Search Bar */}
-			<TextInput
-				style={styles.searchBar}
-				placeholder="Search by title or farm"
-				placeholderTextColor="#999"
-				value={searchQuery}
-				onChangeText={setSearchQuery}
-			/>
+		<SafeAreaView style={styles.container}>
+  {/* Search Bar */}
+  <TextInput
+    style={styles.searchBar}
+    placeholder="Search by title or farm"
+    placeholderTextColor="#999"
+    value={searchQuery}
+    onChangeText={setSearchQuery}
+  />
 
-			{/* Category Filter Row */}
-			<ScrollView
-				horizontal
-				showsHorizontalScrollIndicator={false}
-				style={{
-					maxHeight: "fit-content",
-					marginBottom: "7px",
-				}}
-			>
-				{categories.map((category) => (
-					<TouchableOpacity
-						key={category}
-						style={[
-							styles.categoryButton,
-							selectedCategory === category && styles.selectedCategoryButton,
-						]}
-						onPress={() => setSelectedCategory(category)}
-					>
-						<Text
-							style={[
-								styles.categoryButtonText,
-								selectedCategory === category &&
-									styles.selectedCategoryButtonText,
-							]}
-						>
-							{category}
-						</Text>
-					</TouchableOpacity>
-				))}
-			</ScrollView>
+  {/* Category Filter Row */}
+  <ScrollView
+    horizontal
+    showsHorizontalScrollIndicator={false}
+    style={styles.categoryRow}
+  >
+    {categories.map((category) => (
+      <TouchableOpacity
+        key={category}
+        style={[
+          styles.categoryButton,
+          selectedCategory === category && styles.selectedCategoryButton,
+        ]}
+        onPress={() => setSelectedCategory(category)}
+      >
+        <Text
+          style={[
+            styles.categoryButtonText,
+            selectedCategory === category && styles.selectedCategoryButtonText,
+          ]}
+        >
+          {category}
+        </Text>
+      </TouchableOpacity>
+    ))}
+  </ScrollView>
 
-			{/* Product List */}
-			<FlatList
-				data={filteredProducts}
-				keyExtractor={(item) => item.id.toString()}
-				renderItem={renderProductCard}
-				contentContainerStyle={styles.productList}
-			/>
+  {/* Product List */}
+  <FlatList
+    data={filteredProducts}
+    keyExtractor={(item) => item.id.toString()}
+    renderItem={renderProductCard}
+    contentContainerStyle={styles.productList}
+    refreshing={refreshing} // FlatList's pull-to-refresh
+    onRefresh={onRefresh}  // Pull-to-refresh handler
+  />
 
-			{/* Product Details Modal */}
-			{selectedProduct && (
-				<Modal
-					animationType="slide"
-					transparent={true}
-					visible={modalVisible}
-					onRequestClose={closeModal}
-				>
-					<View style={styles.modalOverlay}>
-						<View style={styles.modalContent}>
-							<TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-								<Text style={styles.closeButtonText}>X</Text>
-							</TouchableOpacity>
-							<Image source={selectedProduct.image} style={styles.modalImage} />
-							<Text style={styles.modalTitle}>{selectedProduct.title}</Text>
-							<Text style={styles.modalFarm}>{selectedProduct.farm}</Text>
-							<Text style={styles.modalCost}>
-								${selectedProduct.cost.toFixed(2)}
-							</Text>
-							<Text style={styles.modalRemaining}>
-								Remaining: {selectedProduct.remaining}
-							</Text>
-							<Text style={styles.modalDescription}>
-								{selectedProduct.description}
-							</Text>
-							<TouchableOpacity
-								style={styles.addToCartButton}
-								onPress={() => {
-									addToCart(selectedProduct);
-									closeModal();
-								}}
-							>
-								<Text style={styles.addToCartText}>Add to Cart</Text>
-							</TouchableOpacity>
-						</View>
-					</View>
-				</Modal>
-			)}
-		</View>
+  {/* Product Details Modal */}
+  {selectedProduct && (
+    <Modal
+      animationType="slide"
+      transparent={true}
+      visible={modalVisible}
+      onRequestClose={closeModal}
+    >
+      <View style={styles.modalOverlay}>
+        <View style={styles.modalContent}>
+          <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+            <Text style={styles.closeButtonText}>X</Text>
+          </TouchableOpacity>
+          <Image source={selectedProduct.image} style={styles.modalImage} />
+          <Text style={styles.modalTitle}>{selectedProduct.title}</Text>
+          <Text style={styles.modalFarm}>{selectedProduct.farm}</Text>
+          <Text style={styles.modalCost}>
+            ${selectedProduct.cost.toFixed(2)}
+          </Text>
+          <Text style={styles.modalRemaining}>
+            Remaining: {selectedProduct.remaining}
+          </Text>
+          <Text style={styles.modalDescription}>
+            {selectedProduct.description}
+          </Text>
+          <TouchableOpacity
+            style={styles.addToCartButton}
+            onPress={() => {
+              addToCart(selectedProduct);
+              closeModal();
+            }}
+          >
+            <Text style={styles.addToCartText}>Add to Cart</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  )}
+</SafeAreaView>
+
 	);
 }
 

@@ -7,6 +7,8 @@ import {
 	ScrollView,
 	TextInput,
 	Alert,
+	RefreshControl,
+	SafeAreaView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { getFarms, createFarm } from "../../api/farms"; // Assuming createFarm is available in your API
@@ -22,15 +24,30 @@ const FarmsTab = () => {
 		size: "",
 		crop_types: "",
 	});
+	const [refreshing, setRefreshing] = useState(false);
 	const navigation = useNavigation();
 
-	useEffect(() => {
-		const fetchFarms = async () => {
+	// Fetch farms data
+	const fetchFarms = async () => {
+		try {
 			const farmsData = await getFarms();
 			setFarms(farmsData);
-		};
+		} catch (error) {
+			console.error("Error fetching farms:", error);
+		}
+	};
+
+	// Fetch farms on component mount
+	useEffect(() => {
 		fetchFarms();
 	}, []);
+
+	// Pull-to-refresh handler
+	const onRefresh = async () => {
+		setRefreshing(true);
+		await fetchFarms(); // Fetch new data
+		setRefreshing(false);
+	};
 
 	const handleCreateFarm = async () => {
 		try {
@@ -47,8 +64,7 @@ const FarmsTab = () => {
 				crop_types: "",
 			});
 
-			const updatedFarms = await getFarms();
-			setFarms(updatedFarms);
+			await fetchFarms(); // Refresh farms after creation
 		} catch (error) {
 			Alert.alert("Error", "Failed to create the farm.");
 		}
@@ -59,7 +75,13 @@ const FarmsTab = () => {
 	};
 
 	return (
-		<ScrollView style={styles.container}>
+		<SafeAreaView style={styles.container}>
+		<ScrollView
+			style={styles.container}
+			refreshControl={
+				<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+			}
+		>
 			<Text style={styles.title}>Farm Overview</Text>
 
 			<TouchableOpacity
@@ -127,6 +149,7 @@ const FarmsTab = () => {
 				</View>
 			</Modal>
 		</ScrollView>
+		</SafeAreaView>
 	);
 };
 

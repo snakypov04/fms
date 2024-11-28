@@ -7,40 +7,53 @@ import {
 	StyleSheet,
 	Image,
 	Alert,
+	ScrollView,
+	RefreshControl
 } from "react-native";
 import { getBasket } from "../../api/products";
+import { SafeAreaView } from "react-native";
 
 export default function Cart() {
 	const [cartItems, setCartItems] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
 	const [loading, setLoading] = useState(true);
-
+	const [refreshing, setRefreshing] = useState(false);
+	
+	const fetchCartItems = async () => {
+		try {
+			const response = await getBasket();
+			// Assuming the response contains an array of carts with one active cart
+			const cartData = response.data[0]; // Access the first cart
+			const formattedCartItems = cartData.items.map((item) => ({
+				id: item.id,
+				title: item.product.name,
+				image: "https://via.placeholder.com/150", // Replace with actual image if available
+				cost: parseFloat(item.product.price),
+				quantity: item.quantity,
+			}));
+			setCartItems(formattedCartItems);
+	setTotalPrice(parseFloat(cartData.total_price));
+		} catch (error) {
+			console.error("Error fetching cart items:", error);
+			Alert.alert("Error", "Failed to fetch cart items.");
+		} finally {
+			setLoading(false);
+		}
+	};
+	
 	// Fetch cart data on component mount
 	useEffect(() => {
-		const fetchCartItems = async () => {
-			try {
-				const response = await getBasket();
-				// Assuming the response contains an array of carts with one active cart
-				const cartData = response.data[0]; // Access the first cart
-				const formattedCartItems = cartData.items.map((item) => ({
-					id: item.id,
-					title: item.product.name,
-					image: "https://via.placeholder.com/150", // Replace with actual image if available
-					cost: parseFloat(item.product.price),
-					quantity: item.quantity,
-				}));
-				setCartItems(formattedCartItems);
-        setTotalPrice(parseFloat(cartData.total_price));
-			} catch (error) {
-				console.error("Error fetching cart items:", error);
-				Alert.alert("Error", "Failed to fetch cart items.");
-			} finally {
-				setLoading(false);
-			}
-		};
+		
 
 		fetchCartItems();
 	}, []);
+
+	// Pull-to-refresh handler
+	const onRefresh = async () => {
+		setRefreshing(true);
+		await fetchCartItems(); // Fetch new data
+		setRefreshing(false);
+	};
 
 	// Function to increase quantity
 	const increaseQuantity = (id) => {
@@ -69,6 +82,7 @@ export default function Cart() {
 
 
 	const renderCartItem = ({ item }) => (
+		
 		<View style={styles.cartItem}>
 			<Image source={{ uri: item.image }} style={styles.itemImage} />
 			<View style={styles.itemDetails}>
@@ -108,31 +122,36 @@ export default function Cart() {
 	}
 
 	return (
-		<View style={styles.container}>
-			<Text style={styles.title}>Your Cart</Text>
+		<SafeAreaView style={styles.container}>
+			<ScrollView style={styles.container} refreshControl={
+				<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+			}>
+				<Text style={styles.title}>Your Cart</Text>
 
-			{cartItems.length > 0 ? (
-				<>
-					{/* Cart Items List */}
-					<FlatList
-						data={cartItems}
-						keyExtractor={(item) => item.id.toString()}
-						renderItem={renderCartItem}
-						contentContainerStyle={styles.cartList}
-					/>
+				{cartItems.length > 0 ? (
+					<>
+						{/* Cart Items List */}
+						<FlatList
+							data={cartItems}
+							keyExtractor={(item) => item.id.toString()}
+							renderItem={renderCartItem}
+							contentContainerStyle={styles.cartList}
+						/>
 
-					{/* Total Cost and Checkout */}
-					<View style={styles.checkoutSection}>
-						<Text style={styles.totalCost}>Total: ${totalPrice.toFixed(2)}</Text>
-						<TouchableOpacity style={styles.checkoutButton}>
-							<Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
-						</TouchableOpacity>
-					</View>
-				</>
-			) : (
-				<Text style={styles.emptyCartText}>Your cart is empty.</Text>
-			)}
-		</View>
+						{/* Total Cost and Checkout */}
+						<View style={styles.checkoutSection}>
+							<Text style={styles.totalCost}>Total: ${totalPrice.toFixed(2)}</Text>
+							<TouchableOpacity style={styles.checkoutButton}>
+								<Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
+							</TouchableOpacity>
+						</View>
+					</>
+				) : (
+					<Text style={styles.emptyCartText}>Your cart is empty.</Text>
+				)}
+			</ScrollView>
+		</SafeAreaView>
+		
 	);
 }
 

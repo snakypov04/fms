@@ -48,7 +48,7 @@ export default function _layout() {
 	return (
 			<Stack.Navigator>
 				<Stack.Screen
-					name="FarmerTabs"
+					name="(farmer)"
 					component={FarmerTabs}
 					options={{ headerShown: false }} // Hide header for tabs
 				/>
