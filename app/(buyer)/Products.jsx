@@ -14,7 +14,7 @@ import {
 	RefreshControl,
  	Alert
 } from "react-native";
-import { getProducts, addProduct } from "../../api/products";
+import { getProducts, addProductToCart } from "../../api/products";
 
 const categories = ["All", "Fruits", "Vegetables", "Dairy", "Bakery", "Meat"];
 
@@ -70,7 +70,7 @@ export default function Products() {
 
 	const addToCart = async (product) => {
 		try {
-			const response = await addProduct({
+			const response = await addProductToCart({
 				product_id: product.id,
 				quantity: 1,
 			});

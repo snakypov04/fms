@@ -2,8 +2,8 @@ import { apiClient } from "./config";
 
 export const getFarms = async () => {
 	try {
-		const response = await apiClient.get("/farms/");
-		console.log(response.data)
+		const response = await apiClient.get("/farms/my-farms");
+		console.log(response.data);
 		return response.data;
 	} catch (e) {
 		throw Error(`Error getting farms: ${e}`);
@@ -32,7 +32,6 @@ export const createFarm = async (data) => {
 		if (response.status === 403) {
 			throw Error(`could not create error: ${response.data}`);
 		}
-
 	} catch (e) {
 		throw Error(`Error creating farm: ${e}`);
 	}

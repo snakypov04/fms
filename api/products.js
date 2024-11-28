@@ -9,7 +9,7 @@ export const getProducts = async () => {
 	}
 };
 
-export const addProduct = async (data) => {
+export const addProductToCart = async (data) => {
 	try {
 		const response = await apiClient.post("/basket-items/", {
 			product: data.product_id,
