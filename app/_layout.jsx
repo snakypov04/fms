@@ -40,10 +40,10 @@ export default function RootLayout() {
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
 
         {/* Buyer-specific layout */}
-        <Stack.Screen name="(buyer)" options={{ headerShown: false }} />
+        <Stack.Screen name="buyer" options={{ headerShown: false }} />
 
         {/* Farmer-specific layout */}
-        <Stack.Screen name="(farmer)" options={{ headerShown: false }} />
+        <Stack.Screen name="farmer" options={{ headerShown: false }} />
 
         <Stack.Screen name="farmdetails" options={{ headerShown: false }} />
       </Stack>

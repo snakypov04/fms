@@ -22,7 +22,7 @@ import RNPickerSelect from "react-native-picker-select";
 import { useLocalSearchParams } from "expo-router";
 
 const FarmDetails = () => {
-	const { farm_id } = useLocalSearchParams; // Get the farm_id from navigation parameters
+	const { farm_id } = useLocalSearchParams(); // Get the farm_id from navigation parameters
 	const [farm, setFarm] = useState(null);
 	const [products, setProducts] = useState([]);
 	const [loading, setLoading] = useState(true);

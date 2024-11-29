@@ -20,9 +20,9 @@ export default function Login() {
     const {role} = await getProfile()
     console.log(role)
     if (role === "Farmer"){
-      router.push('/(farmer)/Profile');
+      router.push('/farmer/Profile');
     }else if(role === "Buyer"){
-      router.push('/(buyer)/Profile');
+      router.push('/buyer/Profile');
     }else{
       throw error
     }
@@ -60,15 +60,6 @@ export default function Login() {
       </TouchableOpacity>
       <TouchableOpacity style={styles.registerButton} onPress={() => router.push('/(auth)/registerFarmer')}>
         <Text style={styles.registerButtonText}>Register as a Farmer</Text>
-      </TouchableOpacity>
-
-      {/* Temporary Navigation Buttons */}
-      <Text style={styles.dividerText}>Temporary Navigation:</Text>
-      <TouchableOpacity style={styles.temporaryButton} onPress={() => router.push('/(buyer)/Profile')}>
-        <Text style={styles.temporaryButtonText}>Go to Buyer Page</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.temporaryButton} onPress={() => router.push('/(farmer)/Profile')}>
-        <Text style={styles.temporaryButtonText}>Go to Farmer Page</Text>
       </TouchableOpacity>
     </View>
   );

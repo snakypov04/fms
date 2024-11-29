@@ -25,7 +25,6 @@ const FarmsTab = () => {
 		crop_types: "",
 	});
 	const [refreshing, setRefreshing] = useState(false);
-	const navigation = useNavigation();
 
 	// Fetch farms data
 	const fetchFarms = async () => {
@@ -88,22 +87,6 @@ const FarmsTab = () => {
 				<Text style={styles.createButtonText}>Create Farm</Text>
 			</TouchableOpacity>
 
-			{farms.map((farm) => (
-				<View key={farm.id} style={styles.farmCard}>
-					<Text style={styles.farmName}>{farm.name}</Text>
-					<Text style={styles.farmDetail}>Address: {farm.address}</Text>
-					<Text style={styles.farmDetail}>Crops: {farm.crop_types}</Text>
-					<Text style={styles.farmDetail}>
-						Verified: {farm.is_verified ? "Yes" : "No"}
-					</Text>
-					<TouchableOpacity
-						style={styles.viewDetailsButton}
-						onPress={() => handleViewDetails(farm.id)}
-					>
-						<Text style={styles.viewDetailsButtonText}>View Details</Text>
-					</TouchableOpacity>
-				</View>
-			))}
 			{/* List of Farms */}
 			{farms.map((farm) => (
 				<View key={farm.id} style={styles.farmCard}>
