@@ -10,8 +10,8 @@ import {
 	RefreshControl,
 	SafeAreaView,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
-import { getFarms, createFarm } from "../../api/farms"; // Assuming createFarm is available in your API
+import { Link } from "expo-router";
+import { getFarms, createFarm } from "../../api/farms"; // Assuming API functions are correctly implemented
 import { Modal } from "react-native-web";
 
 const FarmsTab = () => {
@@ -49,12 +49,13 @@ const FarmsTab = () => {
 		setRefreshing(false);
 	};
 
+	// Create a new farm
 	const handleCreateFarm = async () => {
 		try {
 			await createFarm(formData);
-
 			Alert.alert("Success", "Farm created successfully!");
 
+			// Close modal and reset form
 			setModalVisible(false);
 			setFormData({
 				name: "",
@@ -68,10 +69,6 @@ const FarmsTab = () => {
 		} catch (error) {
 			Alert.alert("Error", "Failed to create the farm.");
 		}
-	};
-
-	const handleViewDetails = (farmId) => {
-		navigation.navigate("FarmDetails", { farm_id: farmId });
 	};
 
 	return (
@@ -104,6 +101,27 @@ const FarmsTab = () => {
 						onPress={() => handleViewDetails(farm.id)}
 					>
 						<Text style={styles.viewDetailsButtonText}>View Details</Text>
+					</TouchableOpacity>
+				</View>
+			))}
+			{/* List of Farms */}
+			{farms.map((farm) => (
+				<View key={farm.id} style={styles.farmCard}>
+					<Text style={styles.farmName}>{farm.name}</Text>
+					<Text style={styles.farmDetail}>Address: {farm.address}</Text>
+					<Text style={styles.farmDetail}>Crops: {farm.crop_types}</Text>
+					<Text style={styles.farmDetail}>
+						Verified: {farm.is_verified ? "Yes" : "No"}
+					</Text>
+
+					{/* View Details Link */}
+					<TouchableOpacity style={styles.viewDetailsButton}>
+						<Link
+							href={`/farmdetails/${farm.id}`}
+							style={styles.viewDetailsButtonText}
+						>
+							View Details
+						</Link>
 					</TouchableOpacity>
 				</View>
 			))}

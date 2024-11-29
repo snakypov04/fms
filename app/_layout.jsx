@@ -44,6 +44,8 @@ export default function RootLayout() {
 
         {/* Farmer-specific layout */}
         <Stack.Screen name="(farmer)" options={{ headerShown: false }} />
+
+        <Stack.Screen name="farmdetails" options={{ headerShown: false }} />
       </Stack>
 
       {/* Status bar for system UI */}

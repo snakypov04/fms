@@ -1,17 +1,14 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Profile from "./Profile";
 import Farms from "./Farms";
 import Inventory from "./Inventory";
 import Orders from "./Orders";
-import FarmDetails from "./FarmDetails"; // Import the new page
 import { Ionicons } from "@expo/vector-icons";
 
 const Tab = createBottomTabNavigator();
-const Stack = createNativeStackNavigator();
 
-export function FarmerTabs() {
+export default function layout() {
 	return (
 		<Tab.Navigator
 			initialRouteName="Farms" // Default to Farms tab
@@ -41,22 +38,5 @@ export function FarmerTabs() {
 			<Tab.Screen name="Inventory" component={Inventory} />
 			<Tab.Screen name="Orders" component={Orders} />
 		</Tab.Navigator>
-	);
-}
-
-export default function _layout() {
-	return (
-			<Stack.Navigator>
-				<Stack.Screen
-					name="(farmer)"
-					component={FarmerTabs}
-					options={{ headerShown: false }} // Hide header for tabs
-				/>
-				<Stack.Screen
-					name="FarmDetails"
-					component={FarmDetails}
-					options={{ title: "Farm Details" }} // Set title for FarmDetails
-				/>
-			</Stack.Navigator>
 	);
 }
