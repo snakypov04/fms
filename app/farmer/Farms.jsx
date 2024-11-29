@@ -10,11 +10,12 @@ import {
 	RefreshControl,
 	SafeAreaView,
 } from "react-native";
-import { Link } from "expo-router";
 import { getFarms, createFarm } from "../../api/farms"; // Assuming API functions are correctly implemented
 import { Modal } from "react-native-web";
+import { useRouter } from 'expo-router';
 
 const FarmsTab = () => {
+	const router = useRouter();
 	const [farms, setFarms] = useState([]);
 	const [modalVisible, setModalVisible] = useState(false);
 	const [formData, setFormData] = useState({
@@ -98,14 +99,9 @@ const FarmsTab = () => {
 					</Text>
 
 					{/* View Details Link */}
-					<TouchableOpacity style={styles.viewDetailsButton}>
-						<Link
-							href={`/farmdetails/${farm.id}`}
-							style={styles.viewDetailsButtonText}
-						>
-							View Details
-						</Link>
-					</TouchableOpacity>
+					<TouchableOpacity style={styles.viewDetailsButton} onPress={() => {router.push(`/farmdetails/${farm.id}`)}}>
+						<Text style={styles.viewDetailsButtonText}>View Details</Text>
+    				</TouchableOpacity>
 				</View>
 			))}
 
