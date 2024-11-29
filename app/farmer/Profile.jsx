@@ -93,7 +93,7 @@ export default function FarmerProfile() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.container}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20 }}>
         {/* Avatar Section */}
         <View style={styles.avatarContainer}>
           <TouchableOpacity onPress={handleAvatarUpload}>
@@ -203,6 +203,7 @@ const styles = StyleSheet.create({
   container: {
     padding: 20,
     backgroundColor: "#f7f7f7",
+    flex: 1,
   },
   avatarContainer: {
     alignItems: "center",

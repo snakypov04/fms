@@ -116,7 +116,7 @@ export default function Profile() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView style={styles.container} refreshControl={
+      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20 }} refreshControl={
 				<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
 			}>
         {/* Avatar */}
