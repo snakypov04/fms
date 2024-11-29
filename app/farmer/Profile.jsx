@@ -92,107 +92,110 @@ export default function FarmerProfile() {
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {/* Avatar Section */}
-      <View style={styles.avatarContainer}>
-        <TouchableOpacity onPress={handleAvatarUpload}>
-          <Image
-            source={avatar ? { uri: avatar } : require('../../assets/images/default-avatar.png')}
-            style={styles.avatar}
+    <SafeAreaView style={styles.container}>
+      <ScrollView style={styles.container}>
+        {/* Avatar Section */}
+        <View style={styles.avatarContainer}>
+          <TouchableOpacity onPress={handleAvatarUpload}>
+            <Image
+              source={avatar ? { uri: avatar } : require('../../assets/images/default-avatar.png')}
+              style={styles.avatar}
+            />
+            <Text style={styles.avatarText}>Upload Avatar</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Profile Fields */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>First Name</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your first name"
+            value={firstName}
+            onChangeText={setFirstName}
           />
-          <Text style={styles.avatarText}>Upload Avatar</Text>
+
+          <Text style={styles.label}>Last Name</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your last name"
+            value={lastName}
+            onChangeText={setLastName}
+          />
+
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={[styles.input, styles.disabledInput]}
+            value={email}
+            editable={false}
+          />
+
+          <Text style={styles.label}>Phone</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your phone number"
+            value={phone}
+            onChangeText={setPhone}
+          />
+
+          <Text style={styles.label}>Bio</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your bio"
+            value={bio}
+            onChangeText={setBio}
+          />
+
+          <Text style={styles.label}>Experience (Years)</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your experience"
+            value={String(experience)}
+            keyboardType="numeric"
+            onChangeText={(value) => setExperience(Number(value))}
+          />
+
+          <Text style={styles.label}>Rating</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Enter your rating"
+            value={String(rating)}
+            keyboardType="numeric"
+            onChangeText={(value) => setRating(Number(value))}
+          />
+        </View>
+
+        {/* Social Links */}
+        <View style={styles.fieldContainer}>
+          <Text style={styles.label}>Social Links</Text>
+          {socials.map((social, index) => (
+            <View key={social.id} style={styles.socialRow}>
+              <TextInput
+                style={[styles.input, styles.socialInput]}
+                placeholder="Platform (e.g., Facebook)"
+                value={social.platform}
+                onChangeText={(value) => updateSocial(index, "platform", value)}
+              />
+              <TextInput
+                style={[styles.input, styles.socialInput]}
+                placeholder="URL (e.g., https://facebook.com)"
+                value={social.url}
+                onChangeText={(value) => updateSocial(index, "url", value)}
+              />
+            </View>
+          ))}
+          <TouchableOpacity style={styles.addSocialButton} onPress={addSocial}>
+            <Text style={styles.addSocialButtonText}>Add Social Link</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Save Button */}
+        <TouchableOpacity style={styles.saveButton} onPress={saveProfile}>
+          <Text style={styles.saveButtonText}>Save Profile</Text>
         </TouchableOpacity>
-      </View>
-
-      {/* Profile Fields */}
-      <View style={styles.fieldContainer}>
-        <Text style={styles.label}>First Name</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your first name"
-          value={firstName}
-          onChangeText={setFirstName}
-        />
-
-        <Text style={styles.label}>Last Name</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your last name"
-          value={lastName}
-          onChangeText={setLastName}
-        />
-
-        <Text style={styles.label}>Email</Text>
-        <TextInput
-          style={[styles.input, styles.disabledInput]}
-          value={email}
-          editable={false}
-        />
-
-        <Text style={styles.label}>Phone</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your phone number"
-          value={phone}
-          onChangeText={setPhone}
-        />
-
-        <Text style={styles.label}>Bio</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your bio"
-          value={bio}
-          onChangeText={setBio}
-        />
-
-        <Text style={styles.label}>Experience (Years)</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your experience"
-          value={String(experience)}
-          keyboardType="numeric"
-          onChangeText={(value) => setExperience(Number(value))}
-        />
-
-        <Text style={styles.label}>Rating</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter your rating"
-          value={String(rating)}
-          keyboardType="numeric"
-          onChangeText={(value) => setRating(Number(value))}
-        />
-      </View>
-
-      {/* Social Links */}
-      <View style={styles.fieldContainer}>
-        <Text style={styles.label}>Social Links</Text>
-        {socials.map((social, index) => (
-          <View key={social.id} style={styles.socialRow}>
-            <TextInput
-              style={[styles.input, styles.socialInput]}
-              placeholder="Platform (e.g., Facebook)"
-              value={social.platform}
-              onChangeText={(value) => updateSocial(index, "platform", value)}
-            />
-            <TextInput
-              style={[styles.input, styles.socialInput]}
-              placeholder="URL (e.g., https://facebook.com)"
-              value={social.url}
-              onChangeText={(value) => updateSocial(index, "url", value)}
-            />
-          </View>
-        ))}
-        <TouchableOpacity style={styles.addSocialButton} onPress={addSocial}>
-          <Text style={styles.addSocialButtonText}>Add Social Link</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Save Button */}
-      <TouchableOpacity style={styles.saveButton} onPress={saveProfile}>
-        <Text style={styles.saveButtonText}>Save Profile</Text>
-      </TouchableOpacity>
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
+    
   );
 }
 
