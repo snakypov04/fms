@@ -1,25 +1,36 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
-
+import { getMessages } from "../../api/chat";  // Assuming this function fetches messages from API
 
 const Chat = () => {
-    const { farm_id } = useLocalSearchParams(); // Get the farm_id from navigation parameters
+    const { roomName } = useLocalSearchParams(); // Get the room_name from navigation parameters
+    console.log(roomName); // Log the room_name to the console
 
-    const [messages, setMessages] = useState([
-        { id: "1", sender: "me", text: "Hi there!" },
-        { id: "2", sender: "companion", text: "Hello!" },
-        { id: "3", sender: "me", text: "How are you?" },
-    ]);
+    const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
-    const [companionName, setCompanionName] = useState("John Doe"); // This could come from the room
+    const [companionName, setCompanionName] = useState(""); // Companion's name from API
+    const [companionEmail, setCompanionEmail] = useState(""); // Companion's email, if you want to display
+
+    useEffect(() => {
+        fetchMessages();
+    }, []);
+
+    const fetchMessages = async () => {
+        const messagesData = await getMessages(roomName);
+        if (messagesData && messagesData.companion) {
+            setCompanionName(messagesData.companion.full_name); // Set companion name from API
+            setCompanionEmail(messagesData.companion.email); // Optional: If you need the companion's email
+            setMessages(messagesData.messages); // Set messages from API
+        }
+    };
 
     const handleSend = () => {
         if (input.trim()) {
             setMessages([
                 ...messages,
-                { id: (messages.length + 1).toString(), sender: "me", text: input },
+                { sender_id: 4, message: input, timestamp: new Date().toISOString(), who: "me" }, // New message from "me"
             ]);
             setInput("");
         }
@@ -29,10 +40,10 @@ const Chat = () => {
         <View
             style={[
                 styles.messageContainer,
-                item.sender === "me" ? styles.myMessage : styles.companionMessage,
+                item.who === "me" ? styles.myMessage : styles.companionMessage,
             ]}
         >
-            <Text style={styles.messageText}>{item.text}</Text>
+            <Text style={styles.messageText}>{item.message}</Text>
         </View>
     );
 
@@ -47,9 +58,9 @@ const Chat = () => {
             <FlatList
                 data={messages}
                 renderItem={renderMessage}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item, index) => index.toString()} // Use index as key for dynamic messages
                 style={styles.messageList}
-                inverted
+                inverted // Invert to show latest message at the bottom
             />
 
             {/* Input Area */}

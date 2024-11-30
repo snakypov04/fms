@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, FlatList, Modal, Button, TextInput, Image } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";  // Import Ionicons
-import { getChatRooms } from "../../api/chat";
+import { getChatRooms } from "../../api/chat";  // Assuming this function fetches chat rooms
 
-const ChatRoomsList = ({ }) => {
+const ChatRoomsList = () => {
     const router = useRouter();
     const [modalVisible, setModalVisible] = useState(false);
     const [searchQuery, setSearchQuery] = useState(""); // For search query
@@ -17,22 +17,24 @@ const ChatRoomsList = ({ }) => {
     const [filteredUsers, setFilteredUsers] = useState(users); // Filtered users based on search
     const [rooms, setRoomsD] = useState([]);
 
-    // Mock list of rooms (existing chats)
-    const roomsD = [
-        { id: "1-2", companionName: "John Doe", lastMessage: "Hey there!", timestamp: "2:30 PM" },
-        { id: "2-3", companionName: "Jane Doe", lastMessage: "How's it going?", timestamp: "1:45 PM" },
-        { id: "4-5", companionName: "Alice", lastMessage: "Are we meeting tonight?", timestamp: "12:00 PM" },
-    ];
-
-    useEffect(() => {
-        fetchRooms();
-    }, []);
-
+    // Function to fetch chat rooms
     const fetchRooms = async () => {
         const data = await getChatRooms();
         setRoomsD(data);
+        console.log("fetching rooms...");
+
     };
 
+    useEffect(() => {
+        // Initial fetch on component mount
+        fetchRooms();
+
+        // Set up polling every 10 seconds (10000 ms)
+        const intervalId = setInterval(fetchRooms, 10000);
+
+        // Clear interval on component unmount
+        return () => clearInterval(intervalId);
+    }, []);  // Empty dependency array to run on mount and unmount
 
     const handleRoomPress = (roomName) => {
         router.push(`chat/${roomName}`);
@@ -52,23 +54,30 @@ const ChatRoomsList = ({ }) => {
         setFilteredUsers(filtered);
     };
 
-    const renderRoomItem = ({ item }) => (
-        <TouchableOpacity
-            style={styles.roomItem}
-            onPress={() => handleRoomPress(item.room_name)} // use room_name for navigation
-            key={item.room_name} // Add the unique key prop
-        >
-            <View style={styles.roomHeader}>
-                {/* Displaying the avatar */}
-                <Image source={{ uri: "https://randomuser.me/api/portraits/men/1.jpg" }} style={styles.roomAvatar} />
-                <Text style={styles.roomText}>
-                    {item.companion.full_name || "John Doe"}
-                </Text>
-            </View>
-            <Text style={styles.lastMessage}>{item.last_message.message}</Text>
-            <Text style={styles.timestamp}>{new Date(item.last_message.timestamp).toLocaleTimeString()}</Text>
-        </TouchableOpacity>
-    );
+    const renderRoomItem = ({ item }) => {
+        const { room_name, companion, last_message } = item;
+
+        // Format the timestamp to a readable time
+        const formattedTimestamp = new Date(last_message.timestamp).toLocaleTimeString();
+
+        return (
+            <TouchableOpacity
+                style={styles.roomItem}
+                onPress={() => handleRoomPress(room_name)} // use room_name for navigation
+                key={room_name} // Add the unique key prop
+            >
+                <View style={styles.roomHeader}>
+                    {/* Displaying the avatar */}
+                    <Image source={{ uri: "https://randomuser.me/api/portraits/men/1.jpg" }} style={styles.roomAvatar} />
+                    <Text style={styles.roomText}>
+                        {companion.full_name || "John Doe"}
+                    </Text>
+                </View>
+                <Text style={styles.lastMessage}>{last_message.message}</Text>
+                <Text style={styles.timestamp}>{formattedTimestamp}</Text>
+            </TouchableOpacity>
+        );
+    };
 
     const renderUserItem = ({ item }) => (
         <TouchableOpacity
@@ -76,7 +85,6 @@ const ChatRoomsList = ({ }) => {
             onPress={() => handleNewChatPress(item.id)}
             key={item.id} // Use user.id for the unique key
         >
-            {/* <Image source={{ uri: item.avatar }} style={styles.userAvatar} /> */}
             <Text style={styles.userText}>{item.name}</Text>
         </TouchableOpacity>
     );
@@ -91,7 +99,7 @@ const ChatRoomsList = ({ }) => {
             <FlatList
                 data={rooms}
                 renderItem={renderRoomItem}
-                keyExtractor={(item) => item.id}
+                keyExtractor={(item) => item.room_name} // Use room_name for unique key
                 style={styles.roomList}
             />
 
