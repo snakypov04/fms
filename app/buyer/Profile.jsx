@@ -111,28 +111,21 @@ export default function Profile() {
 		// alert('Profile saved successfully!');
 	};
 
-	return (
-		<SafeAreaView style={styles.container}>
-			<ScrollView
-				style={styles.container}
-				refreshControl={
-					<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-				}
-			>
-				{/* Avatar */}
-				<View style={styles.avatarContainer}>
-					<TouchableOpacity onPress={handleAvatarUpload}>
-						<Image
-							source={
-								userData.avatar
-									? { uri: userData.avatar }
-									: require("../../assets/images/default-avatar.png")
-							}
-							style={styles.avatar}
-						/>
-						<Text style={styles.avatarText}>Upload Avatar</Text>
-					</TouchableOpacity>
-				</View>
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20 }} refreshControl={
+				<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+			}>
+        {/* Avatar */}
+        <View style={styles.avatarContainer}>
+          <TouchableOpacity onPress={handleAvatarUpload}>
+            <Image
+              source={userData.avatar ? { uri: userData.avatar } : require('../../assets/images/default-avatar.png')}
+              style={styles.avatar}
+            />
+            <Text style={styles.avatarText}>Upload Avatar</Text>
+          </TouchableOpacity>
+        </View>
 
 				{/* Profile Fields */}
 				<View style={styles.fieldContainer}>

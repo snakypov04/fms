@@ -6,32 +6,48 @@ import { getProfile, login } from '../../api/auth';
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');  // Add state for error message
   const router = useRouter();
 
   const handleLogin = async () => {
     console.log('Email:', email, 'Password:', password);
-    try{
-      await login(email, password)
-    }catch (error){
-      console.error(error)
-      throw error
-    }
+    setLoginError(''); // Reset any previous error message
 
-    const {role} = await getProfile()
-    console.log(role)
-    if (role === "Farmer"){
-      router.push('/farmer/Profile');
-    }else if(role === "Buyer"){
-      router.push('/buyer/Profile');
-    }else{
-      throw error
+    try {
+      // Attempt to log in
+      await login(email, password);
+      
+      // If login is successful, get user profile
+      const { role } = await getProfile();
+      console.log(role);
+
+      // Redirect based on user role
+      if (role === 'Farmer') {
+        router.push('/farmer/Profile');
+      } else if (role === 'Buyer') {
+        router.push('/buyer/Profile');
+      } else {
+        setLoginError('Unexpected role: ' + role);
+      }
+    } catch (error) {
+      console.error(error);
+      if (error.response && error.response.status === 401) {
+        // If status code 401, email or password is incorrect
+        setLoginError('Email or password is incorrect');
+      } else if (error.response && error.response.status === 400) {
+        setLoginError('Please enter your email and password');
+      } else {
+        // Handle other types of errors (e.g., network errors)
+        setLoginError('An error occurred, please try again later');
+      }
     }
-    
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Authorise</Text>
+      <Text style={styles.title}>Authorize</Text>
+      
+      {/* Email input */}
       <TextInput
         style={styles.input}
         placeholder="Email"
@@ -39,6 +55,8 @@ export default function Login() {
         value={email}
         onChangeText={setEmail}
       />
+
+      {/* Password input */}
       <TextInput
         style={styles.input}
         placeholder="Password"
@@ -47,9 +65,14 @@ export default function Login() {
         value={password}
         onChangeText={setPassword}
       />
+      
+      {/* Login button */}
       <TouchableOpacity style={styles.button} onPress={handleLogin}>
         <Text style={styles.buttonText}>Login</Text>
       </TouchableOpacity>
+
+      {/* Show error message if login failed */}
+      {loginError ? <Text style={styles.errorText}>{loginError}</Text> : null}
 
       {/* Divider */}
       <Text style={styles.dividerText}>Don't have an account?</Text>
@@ -120,16 +143,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
-  temporaryButton: {
-    backgroundColor: '#E0E0E0',
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-    marginVertical: 8,
-  },
-  temporaryButtonText: {
-    color: '#000',
-    fontSize: 16,
+  errorText: {
+    color: 'red',
+    fontSize: 14,
     fontWeight: 'bold',
+    textAlign: 'center',
+    marginVertical: 10,
   },
 });

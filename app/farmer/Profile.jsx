@@ -102,23 +102,19 @@ export default function FarmerProfile() {
 		);
 	};
 
-	return (
-		<SafeAreaView style={styles.container}>
-			<ScrollView style={styles.container}>
-				{/* Avatar Section */}
-				<View style={styles.avatarContainer}>
-					<TouchableOpacity onPress={handleAvatarUpload}>
-						<Image
-							source={
-								profileData.avatar
-									? { uri: profileData.avatar }
-									: require("../../assets/images/default-avatar.png")
-							}
-							style={styles.avatar}
-						/>
-						<Text style={styles.avatarText}>Upload Avatar</Text>
-					</TouchableOpacity>
-				</View>
+  return (
+    <SafeAreaView style={styles.container}>
+      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20 }}>
+        {/* Avatar Section */}
+        <View style={styles.avatarContainer}>
+          <TouchableOpacity onPress={handleAvatarUpload}>
+            <Image
+              source={avatar ? { uri: avatar } : require('../../assets/images/default-avatar.png')}
+              style={styles.avatar}
+            />
+            <Text style={styles.avatarText}>Upload Avatar</Text>
+          </TouchableOpacity>
+        </View>
 
 				{/* Profile Fields */}
 				<View style={styles.fieldContainer}>
@@ -241,88 +237,81 @@ export default function FarmerProfile() {
 }
 
 const styles = StyleSheet.create({
-	container: {
-		padding: 20,
-		backgroundColor: "#f7f7f7",
-		flex: 1,
-	},
-	avatarContainer: {
-		alignItems: "center",
-		marginBottom: 20,
-	},
-	avatar: {
-		width: 120,
-		height: 120,
-		borderRadius: 60,
-		borderWidth: 1,
-		borderColor: "#ccc",
-		backgroundColor: "#e0e0e0",
-	},
-	avatarText: {
-		marginTop: 10,
-		color: "#4CAF50",
-		fontSize: 14,
-		fontWeight: "bold",
-	},
-	fieldContainer: {
-		marginBottom: 20,
-	},
-	label: {
-		fontSize: 16,
-		fontWeight: "bold",
-		marginBottom: 5,
-		color: "#333",
-	},
-	input: {
-		height: 50,
-		borderColor: "#ccc",
-		borderWidth: 1,
-		borderRadius: 8,
-		paddingHorizontal: 10,
-		marginBottom: 15,
-		backgroundColor: "#fff",
-	},
-	disabledInput: {
-		backgroundColor: "#e0e0e0",
-		color: "#999",
-	},
-	socialRow: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		marginBottom: 10,
-	},
-	socialInput: {
-		flex: 1,
-		marginHorizontal: 5,
-	},
-	addSocialButton: {
-		backgroundColor: "#4CAF50",
-		padding: 10,
-		borderRadius: 8,
-		alignItems: "center",
-		marginTop: 10,
-	},
-	addSocialButtonText: {
-		color: "#fff",
-		fontSize: 16,
-		fontWeight: "bold",
-	},
-	saveButton: {
-		backgroundColor: "#4CAF50",
-		paddingVertical: 15,
-		borderRadius: 8,
-		alignItems: "center",
-	},
-	saveButtonText: {
-		color: "#fff",
-		fontSize: 16,
-		fontWeight: "bold",
-	},
-	picker: {
-		height: 50,
-		width: "100%",
-		borderColor: "gray",
-		borderWidth: 1,
-		marginBottom: 10,
-	},
+  container: {
+    padding: 20,
+    backgroundColor: "#f7f7f7",
+    flex: 1,
+  },
+  avatarContainer: {
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  avatar: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    backgroundColor: "#e0e0e0",
+  },
+  avatarText: {
+    marginTop: 10,
+    color: "#4CAF50",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  fieldContainer: {
+    marginBottom: 20,
+  },
+  label: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 5,
+    color: "#333",
+  },
+  input: {
+    height: 50,
+    borderColor: "#ccc",
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginBottom: 15,
+    backgroundColor: "#fff",
+  },
+  disabledInput: {
+    backgroundColor: "#e0e0e0",
+    color: "#999",
+  },
+  socialRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  socialInput: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
+  addSocialButton: {
+    backgroundColor: "#4CAF50",
+    padding: 10,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+  },
+  addSocialButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  saveButton: {
+    backgroundColor: "#4CAF50",
+    paddingVertical: 15,
+    borderRadius: 8,
+    alignItems: "center",
+  },
+  saveButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
 });

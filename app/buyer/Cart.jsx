@@ -1,158 +1,151 @@
 import React, { useState, useEffect } from "react";
 import {
-	View,
-	Text,
-	FlatList,
-	TouchableOpacity,
-	StyleSheet,
-	Image,
-	Alert,
-	ScrollView,
-	RefreshControl
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  Image,
+  Alert,
+  RefreshControl,
 } from "react-native";
 import { getBasket } from "../../api/products";
 import { SafeAreaView } from "react-native";
 
 export default function Cart() {
-	const [cartItems, setCartItems] = useState([]);
+  const [cartItems, setCartItems] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
-	const [loading, setLoading] = useState(true);
-	const [refreshing, setRefreshing] = useState(false);
-	
-	const fetchCartItems = async () => {
-		try {
-			const response = await getBasket();
-			// Assuming the response contains an array of carts with one active cart
-			const cartData = response.data[0]; // Access the first cart
-			const formattedCartItems = cartData.items.map((item) => ({
-				id: item.id,
-				title: item.product.name,
-				image: "https://via.placeholder.com/150", // Replace with actual image if available
-				cost: parseFloat(item.product.price),
-				quantity: item.quantity,
-			}));
-			setCartItems(formattedCartItems);
-	setTotalPrice(parseFloat(cartData.total_price));
-		} catch (error) {
-			console.error("Error fetching cart items:", error);
-			Alert.alert("Error", "Failed to fetch cart items.");
-		} finally {
-			setLoading(false);
-		}
-	};
-	
-	// Fetch cart data on component mount
-	useEffect(() => {
-		
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-		fetchCartItems();
-	}, []);
+  const fetchCartItems = async () => {
+    try {
+      const response = await getBasket();
+      const cartData = response.data[0]; // Access the first cart
+      const formattedCartItems = cartData.items.map((item) => ({
+        id: item.id,
+        title: item.product.name,
+        image: "https://via.placeholder.com/150", // Replace with actual image if available
+        cost: parseFloat(item.product.price),
+        quantity: item.quantity,
+      }));
+      setCartItems(formattedCartItems);
+      setTotalPrice(parseFloat(cartData.total_price));
+    } catch (error) {
+      console.error("Error fetching cart items:", error);
+      Alert.alert("Error", "Failed to fetch cart items.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-	// Pull-to-refresh handler
-	const onRefresh = async () => {
-		setRefreshing(true);
-		await fetchCartItems(); // Fetch new data
-		setRefreshing(false);
-	};
+  // Fetch cart data on component mount
+  useEffect(() => {
+    fetchCartItems();
+  }, []);
 
-	// Function to increase quantity
-	const increaseQuantity = (id) => {
-		setCartItems((prevItems) =>
-			prevItems.map((item) =>
-				item.id === id ? { ...item, quantity: item.quantity + 1 } : item
-			)
-		);
-	};
+  // Pull-to-refresh handler
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchCartItems(); // Fetch new data
+    setRefreshing(false);
+  };
 
-	// Function to decrease quantity
-	const decreaseQuantity = (id) => {
-		setCartItems((prevItems) =>
-			prevItems.map((item) =>
-				item.id === id && item.quantity > 1
-					? { ...item, quantity: item.quantity - 1 }
-					: item
-			)
-		);
-	};
+  // Function to increase quantity
+  const increaseQuantity = (id) => {
+    setCartItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === id ? { ...item, quantity: item.quantity + 1 } : item
+      )
+    );
+  };
 
-	// Function to remove an item from the cart
-	const removeItem = (id) => {
-		setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
-	};
+  // Function to decrease quantity
+  const decreaseQuantity = (id) => {
+    setCartItems((prevItems) =>
+      prevItems.map((item) =>
+        item.id === id && item.quantity > 1
+          ? { ...item, quantity: item.quantity - 1 }
+          : item
+      )
+    );
+  };
 
+  // Function to remove an item from the cart
+  const removeItem = (id) => {
+    setCartItems((prevItems) => prevItems.filter((item) => item.id !== id));
+  };
 
-	const renderCartItem = ({ item }) => (
-		
-		<View style={styles.cartItem}>
-			<Image source={{ uri: item.image }} style={styles.itemImage} />
-			<View style={styles.itemDetails}>
-				<Text style={styles.itemTitle}>{item.title}</Text>
-				<Text style={styles.itemCost}>${item.cost.toFixed(2)}</Text>
-				<View style={styles.quantityControls}>
-					<TouchableOpacity
-						style={styles.quantityButton}
-						onPress={() => decreaseQuantity(item.id)}
-					>
-						<Text style={styles.quantityButtonText}>-</Text>
-					</TouchableOpacity>
-					<Text style={styles.quantityText}>{item.quantity}</Text>
-					<TouchableOpacity
-						style={styles.quantityButton}
-						onPress={() => increaseQuantity(item.id)}
-					>
-						<Text style={styles.quantityButtonText}>+</Text>
-					</TouchableOpacity>
-				</View>
-				<TouchableOpacity
-					style={styles.removeButton}
-					onPress={() => removeItem(item.id)}
-				>
-					<Text style={styles.removeButtonText}>Remove</Text>
-				</TouchableOpacity>
-			</View>
-		</View>
-	);
+  const renderCartItem = ({ item }) => (
+    <View style={styles.cartItem}>
+      <Image source={{ uri: item.image }} style={styles.itemImage} />
+      <View style={styles.itemDetails}>
+        <Text style={styles.itemTitle}>{item.title}</Text>
+        <Text style={styles.itemCost}>${item.cost.toFixed(2)}</Text>
+        <View style={styles.quantityControls}>
+          <TouchableOpacity
+            style={styles.quantityButton}
+            onPress={() => decreaseQuantity(item.id)}
+          >
+            <Text style={styles.quantityButtonText}>-</Text>
+          </TouchableOpacity>
+          <Text style={styles.quantityText}>{item.quantity}</Text>
+          <TouchableOpacity
+            style={styles.quantityButton}
+            onPress={() => increaseQuantity(item.id)}
+          >
+            <Text style={styles.quantityButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
+        <TouchableOpacity
+          style={styles.removeButton}
+          onPress={() => removeItem(item.id)}
+        >
+          <Text style={styles.removeButtonText}>Remove</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
-	if (loading) {
-		return (
-			<View style={styles.container}>
-				<Text style={styles.loadingText}>Loading cart...</Text>
-			</View>
-		);
-	}
+  if (loading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.loadingText}>Loading cart...</Text>
+      </View>
+    );
+  }
 
-	return (
-		<SafeAreaView style={styles.container}>
-			<ScrollView style={styles.container} refreshControl={
-				<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-			}>
-				<Text style={styles.title}>Your Cart</Text>
-
-				{cartItems.length > 0 ? (
-					<>
-						{/* Cart Items List */}
-						<FlatList
-							data={cartItems}
-							keyExtractor={(item) => item.id.toString()}
-							renderItem={renderCartItem}
-							contentContainerStyle={styles.cartList}
-						/>
-
-						{/* Total Cost and Checkout */}
-						<View style={styles.checkoutSection}>
-							<Text style={styles.totalCost}>Total: ${totalPrice.toFixed(2)}</Text>
-							<TouchableOpacity style={styles.checkoutButton}>
-								<Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
-							</TouchableOpacity>
-						</View>
-					</>
-				) : (
-					<Text style={styles.emptyCartText}>Your cart is empty.</Text>
-				)}
-			</ScrollView>
-		</SafeAreaView>
-		
-	);
+  return (
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={cartItems}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderCartItem}
+        contentContainerStyle={styles.cartList}
+        ListHeaderComponent={
+          <Text style={styles.title}>Your Cart</Text>
+        }
+        ListFooterComponent={
+          cartItems.length > 0 && (
+            <View style={styles.checkoutSection}>
+              <Text style={styles.totalCost}>
+                Total: ${totalPrice.toFixed(2)}
+              </Text>
+              <TouchableOpacity style={styles.checkoutButton}>
+                <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
+              </TouchableOpacity>
+            </View>
+          )
+        }
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListEmptyComponent={
+          <Text style={styles.emptyCartText}>Your cart is empty.</Text>
+        }
+      />
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
