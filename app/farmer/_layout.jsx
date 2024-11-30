@@ -5,6 +5,8 @@ import Farms from "./Farms";
 import Inventory from "./Inventory";
 import Orders from "./Orders";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import ChatRoomsList from "./ChatRoomList";
 
 const Tab = createBottomTabNavigator();
 
@@ -24,6 +26,8 @@ export default function layout() {
 						iconName = focused ? "cube" : "cube-outline";
 					} else if (route.name === "Orders") {
 						iconName = focused ? "cart" : "cart-outline";
+					} else if (route.name === "Chat") {
+						iconName = focused ? "chatbubble" : "chatbubble-outline"
 					}
 
 					return <Ionicons name={iconName} size={size} color={color} />;
@@ -37,6 +41,7 @@ export default function layout() {
 			<Tab.Screen name="Farms" component={Farms} />
 			<Tab.Screen name="Inventory" component={Inventory} />
 			<Tab.Screen name="Orders" component={Orders} />
+			<Tab.Screen name="Chat" component={ChatRoomsList} />
 		</Tab.Navigator>
 	);
 }
