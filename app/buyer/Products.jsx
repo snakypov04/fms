@@ -12,27 +12,27 @@ import {
 	Animated,
 	SafeAreaView,
 	RefreshControl,
- 	Alert
+	Alert,
 } from "react-native";
-import { getProducts, addProductToCart } from "../../api/products";
+import { getProducts, addProductToCart, getCart, getBasket } from "../../api/products";
+import { getCategories } from "../../api/inventory";
 
-const categories = ["All", "Fruits", "Vegetables", "Dairy", "Bakery", "Meat"];
+// const categories = ["All", "Fruits", "Vegetables", "Dairy", "Bakery", "Meat"];
 
 export default function Products() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedCategory, setSelectedCategory] = useState("All");
 	const [products, setProducts] = useState([]);
+	const [cartItems, setCartItems] = useState([]); // Track products already in cart
 	const [selectedProduct, setSelectedProduct] = useState(null);
 	const [modalVisible, setModalVisible] = useState(false);
 	const [buttonScale] = useState(new Animated.Value(1)); // Button animation
-
 	const [refreshing, setRefreshing] = useState(false);
-
+	const [categories, setCategories] = useState([]);
 
 	const fetchProducts = async () => {
 		try {
 			const response = await getProducts();
-			// Map the API response to match the structure used in your component
 			const formattedProducts = response.data.map((product) => ({
 				id: product.id,
 				title: product.name,
@@ -49,34 +49,70 @@ export default function Products() {
 		}
 	};
 
-	useEffect(() => {		
+	useEffect(() => {
 		fetchProducts();
+		fetchCartItems();
+		fetchCategories();
 	}, []);
+
+
+	const fetchCategories = async () => {
+		try {
+			const categoryData = await getCategories();
+			const fetchedCategories = categoryData.map((category) => ({
+				id: category.id,
+				name: category.name,
+			}));
+			setCategories([{ id: 0, name: "All" }, ...fetchedCategories]);
+		} catch (error) {
+			console.error("Failed to fetch categories:", error);
+			Alert.alert("Error", "Failed to fetch categories. Please try again.");
+		}
+	};
+
+	const fetchCartItems = async () => {
+		try {
+			const response = await getBasket();
+			const cartData = response.data;
+
+			// Extract product IDs from the cart's items
+			const cartProductIds = cartData.items.map((item) => item.product.id);
+
+			setCartItems(cartProductIds); // Store product IDs in the cart
+		} catch (error) {
+			console.error("Failed to fetch cart items:", error);
+		}
+	};
 
 	const onRefresh = async () => {
 		setRefreshing(true);
 		await fetchProducts();
+		await fetchCartItems();
 		setRefreshing(false);
 	};
 
-	const filteredProducts = products.filter((product) => {
-		const matchesSearch =
-			product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			product.farm.toLowerCase().includes(searchQuery.toLowerCase());
-		const matchesCategory =
-			selectedCategory === "All" || product.category === selectedCategory;
-		return matchesSearch && matchesCategory;
-	});
-
 	const addToCart = async (product) => {
+		if (cartItems.includes(product.id)) {
+			Alert.alert(
+				"Already Added",
+				`${product.title} is already in the cart.`,
+				[
+					{
+						text: "Go to Cart",
+						onPress: () => navigation.navigate("Cart"), // Navigate to Cart tab
+					},
+					{ text: "Cancel", style: "cancel" },
+				]
+			);
+			return;
+		}
+
 		try {
 			const response = await addProductToCart({
 				product_id: product.id,
 				quantity: 1,
 			});
-
-      console.log(response.data)
-
+			setCartItems((prev) => [...prev, product.id]); // Update cart items locally
 			Alert.alert("Success", `${product.title} added to cart!`);
 		} catch (error) {
 			console.error("Failed to add product to cart:", error);
@@ -109,125 +145,168 @@ export default function Products() {
 		]).start();
 	};
 
-	const renderProductCard = ({ item }) => (
-		<SafeAreaView>
-		<TouchableOpacity
-			style={styles.card}
-			onPress={() => openProductDetails(item)}
-		>
-			<Image source={item.image} style={styles.productImage} />
-			<View style={styles.cardContent}>
-				<Text style={styles.productTitle}>{item.title}</Text>
-				<Text style={styles.productFarm}>{item.farm}</Text>
-				<Text style={styles.productCategory}>{item.category}</Text>
-				<Text style={styles.productCost}>${item.cost.toFixed(2)}</Text>
-				<Text style={styles.productRemaining}>Remaining: {item.remaining}</Text>
-				<Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-					<TouchableOpacity
-						style={styles.addToCartButton}
-						onPress={() => {
-							animateButton();
-							addToCart(item);
-						}}
-					>
-						<Text style={styles.addToCartText}>Add to Cart</Text>
-					</TouchableOpacity>
-				</Animated.View>
-			</View>
-		</TouchableOpacity>
-		</SafeAreaView>
-	);
+	const filteredProducts = products.filter((product) => {
+		const matchesSearch =
+			product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+			product.farm.toLowerCase().includes(searchQuery.toLowerCase());
+		const matchesCategory =
+			selectedCategory === "All" || product.category === selectedCategory;
+		return matchesSearch && matchesCategory;
+	});
+
+	const renderProductCard = ({ item }) => {
+		const isInCart = cartItems.includes(item.id); // Check if product is already in the cart
+
+		return (
+			<TouchableOpacity
+				style={styles.card}
+				onPress={() => openProductDetails(item)}
+			>
+				<Image source={item.image} style={styles.productImage} />
+				<View style={styles.cardContent}>
+					<Text style={styles.productTitle}>{item.title}</Text>
+					<Text style={styles.productFarm}>{item.farm}</Text>
+					<Text style={styles.productCategory}>{item.category}</Text>
+					<Text style={styles.productCost}>${item.cost.toFixed(2)}</Text>
+					<Text style={styles.productRemaining}>Remaining: {item.remaining}</Text>
+					<Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+						<TouchableOpacity
+							style={[
+								styles.addToCartButton,
+								isInCart && styles.alreadyAddedButton, // Apply different style if in cart
+							]}
+							onPress={() => {
+								animateButton();
+								addToCart(item);
+							}}
+							disabled={isInCart} // Disable if already in cart
+						>
+							<Text
+								style={[
+									styles.addToCartText,
+									isInCart && styles.alreadyAddedText, // Apply different text color if in cart
+								]}
+							>
+								{isInCart ? "Already Added" : "Add to Cart"}
+							</Text>
+						</TouchableOpacity>
+					</Animated.View>
+				</View>
+			</TouchableOpacity>
+		);
+	};
 
 	return (
 		<SafeAreaView style={styles.container}>
-  {/* Search Bar */}
-  <TextInput
-    style={styles.searchBar}
-    placeholder="Search by title or farm"
-    placeholderTextColor="#999"
-    value={searchQuery}
-    onChangeText={setSearchQuery}
-  />
+			<TextInput
+				style={styles.searchBar}
+				placeholder="Search by title or farm"
+				placeholderTextColor="#999"
+				value={searchQuery}
+				onChangeText={setSearchQuery}
+			/>
 
-  {/* Category Filter Row */}
-  <ScrollView
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    style={styles.categoryRow}
-  >
-    {categories.map((category) => (
-      <TouchableOpacity
-        key={category}
-        style={[
-          styles.categoryButton,
-          selectedCategory === category && styles.selectedCategoryButton,
-        ]}
-        onPress={() => setSelectedCategory(category)}
-      >
-        <Text
-          style={[
-            styles.categoryButtonText,
-            selectedCategory === category && styles.selectedCategoryButtonText,
-          ]}
-        >
-          {category}
-        </Text>
-      </TouchableOpacity>
-    ))}
-  </ScrollView>
+			<ScrollView
+				horizontal
+				showsHorizontalScrollIndicator={false}
+				style={styles.categoryRow}
+			>
 
-  {/* Product List */}
-  <FlatList
-    data={filteredProducts}
-    keyExtractor={(item) => item.id.toString()}
-    renderItem={renderProductCard}
-    contentContainerStyle={styles.productList}
-    refreshing={refreshing} // FlatList's pull-to-refresh
-    onRefresh={onRefresh}  // Pull-to-refresh handler
-  />
+				{categories.map((category) => (
+					<TouchableOpacity
+						key={category.id}
+						style={[
+							styles.categoryButton,
+							selectedCategory === category.name && styles.selectedCategoryButton,
+						]}
+						onPress={() => setSelectedCategory(category.name)}
+					>
+						<Text
+							style={[
+								styles.categoryButtonText,
+								selectedCategory === category &&
+								styles.selectedCategoryButtonText,
+							]}
+						>
+							{category.name}
+						</Text>
+					</TouchableOpacity>
+				))}
+			</ScrollView>
 
-  {/* Product Details Modal */}
-  {selectedProduct && (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={modalVisible}
-      onRequestClose={closeModal}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-            <Text style={styles.closeButtonText}>X</Text>
-          </TouchableOpacity>
-          <Image source={selectedProduct.image} style={styles.modalImage} />
-          <Text style={styles.modalTitle}>{selectedProduct.title}</Text>
-          <Text style={styles.modalFarm}>{selectedProduct.farm}</Text>
-          <Text style={styles.modalCost}>
-            ${selectedProduct.cost.toFixed(2)}
-          </Text>
-          <Text style={styles.modalRemaining}>
-            Remaining: {selectedProduct.remaining}
-          </Text>
-          <Text style={styles.modalDescription}>
-            {selectedProduct.description}
-          </Text>
-          <TouchableOpacity
-            style={styles.addToCartButton}
-            onPress={() => {
-              addToCart(selectedProduct);
-              closeModal();
-            }}
-          >
-            <Text style={styles.addToCartText}>Add to Cart</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  )}
-</SafeAreaView>
+			<FlatList
+				data={filteredProducts}
+				keyExtractor={(item) => item.id.toString()}
+				renderItem={renderProductCard}
+				contentContainerStyle={styles.productList}
+				refreshing={refreshing}
+				onRefresh={onRefresh}
+			/>
 
+			{selectedProduct && (
+				<Modal
+					animationType="slide"
+					transparent={true}
+					visible={modalVisible}
+					onRequestClose={closeModal}
+				>
+					<View style={styles.modalOverlay}>
+						<View style={styles.modalContent}>
+							<TouchableOpacity style={styles.closeButton} onPress={closeModal}>
+								<Text style={styles.closeButtonText}>X</Text>
+							</TouchableOpacity>
+							<Image source={selectedProduct.image} style={styles.modalImage} />
+							<Text style={styles.modalTitle}>{selectedProduct.title}</Text>
+							<Text style={styles.modalFarm}>{selectedProduct.farm}</Text>
+							<Text style={styles.modalCost}>
+								${selectedProduct.cost.toFixed(2)}
+							</Text>
+							<Text style={styles.modalRemaining}>
+								Remaining: {selectedProduct.remaining}
+							</Text>
+							<Text style={styles.modalDescription}>
+								{selectedProduct.description}
+							</Text>
+							<TouchableOpacity
+								style={[
+									styles.addToCartButton,
+									cartItems.includes(selectedProduct.id)
+										? styles.alreadyAddedButton
+										: styles.addToCartButton,
+								]}
+								onPress={() => {
+									if (!cartItems.includes(selectedProduct.id)) {
+										addToCart(selectedProduct);
+									} else {
+										Alert.alert(
+											"Already Added",
+											`${selectedProduct.title} is already in the cart.`
+										);
+									}
+									closeModal();
+								}}
+							>
+								<Text
+									style={[
+										styles.addToCartText,
+										cartItems.includes(selectedProduct.id) &&
+										styles.alreadyAddedText,
+									]}
+								>
+									{cartItems.includes(selectedProduct.id)
+										? "Already Added"
+										: "Add to Cart"}
+								</Text>
+							</TouchableOpacity>
+						</View>
+					</View>
+				</Modal>
+			)}
+
+		</SafeAreaView>
 	);
 }
+
 
 const styles = StyleSheet.create({
 	container: {
@@ -381,4 +460,17 @@ const styles = StyleSheet.create({
 		fontWeight: "bold",
 		color: "#333",
 	},
+	alreadyAddedButton: {
+		backgroundColor: "#4287f5", // Light salmon color for "Already Added"
+		borderRadius: 8,
+		padding: 8,
+		marginTop: 5,
+		alignItems: "center",
+	},
+	alreadyAddedText: {
+		color: "#fff",
+		fontSize: 14,
+		fontWeight: "bold",
+	},
+
 });

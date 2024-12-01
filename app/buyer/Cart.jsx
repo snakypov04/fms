@@ -22,7 +22,7 @@ export default function Cart() {
   const fetchCartItems = async () => {
     try {
       const response = await getBasket();
-      const cartData = response.data[0];
+      const cartData = response.data;
       const formattedCartItems = cartData.items.map((item) => ({
         id: item.id,
         title: item.product.name,

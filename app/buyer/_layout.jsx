@@ -37,7 +37,9 @@ export default function BuyerLayout() {
     >
       {/* Tabs */}
       <Tab.Screen name="Profile" component={Profile} />
-      <Tab.Screen name="Products" component={Products} />
+      <Tab.Screen name="Products">
+        {(props) => <Products {...props} />}
+      </Tab.Screen>
       <Tab.Screen name="Cart" component={Cart} />
     </Tab.Navigator>
   );
