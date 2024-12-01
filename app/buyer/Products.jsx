@@ -1,384 +1,320 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
 	View,
 	Text,
 	TextInput,
 	FlatList,
 	TouchableOpacity,
-	Image,
 	StyleSheet,
-	ScrollView,
-	Modal,
-	Animated,
 	SafeAreaView,
-	RefreshControl,
- 	Alert
+	Alert,
+	Picker,
 } from "react-native";
-import { getProducts, addProductToCart } from "../../api/products";
-
-const categories = ["All", "Fruits", "Vegetables", "Dairy", "Bakery", "Meat"];
+import { useFocusEffect } from "@react-navigation/native";
+import { getProducts, addProductToCart, getBasket } from "../../api/products";
+import { getCategories } from "../../api/inventory";
 
 export default function Products() {
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedCategory, setSelectedCategory] = useState("All");
+	const [sortOption, setSortOption] = useState("priceAsc");
 	const [products, setProducts] = useState([]);
-	const [selectedProduct, setSelectedProduct] = useState(null);
-	const [modalVisible, setModalVisible] = useState(false);
-	const [buttonScale] = useState(new Animated.Value(1)); // Button animation
-
+	const [cartItems, setCartItems] = useState([]);
 	const [refreshing, setRefreshing] = useState(false);
+	const [categories, setCategories] = useState([]);
+	const [location, setLocation] = useState({
+		latitude: null,
+		longitude: null,
+	});
 
+	useFocusEffect(
+		React.useCallback(() => {
+			const fetchData = async () => {
+				const { latitude, longitude } = await getCurrentLocation();
+				console.log(latitude, longitude);
+				await fetchProducts(latitude, longitude);
+				await fetchCartItems();
+				await fetchCategories();
+			};
+			fetchData();
+		}, [])
+	);
 
-	const fetchProducts = async () => {
+	const fetchProducts = async (latitude, longitude) => {
 		try {
-			const response = await getProducts();
-			// Map the API response to match the structure used in your component
-			const formattedProducts = response.data.map((product) => ({
-				id: product.id,
-				title: product.name,
-				farm: product.farm.name,
-				image: "", // Replace with a proper image URL or placeholder
-				cost: parseFloat(product.price),
-				category: product.category.name,
-				remaining: product.stock_quantity,
-				description: product.description || "No description available.",
-			}));
+			const response = await getProducts(latitude, longitude);
+			const formattedProducts = response.data.map((product) => {
+				const distance = product.farm.distance != null ? parseFloat(product.farm.distance) : Infinity; // Default to Infinity if distance is missing
+				console.log(`Product ID: ${product.id}, Distance: ${distance}`);
+				return {
+					id: product.id,
+					title: product.name,
+					farm: product.farm.name,
+					image: "", // Replace with a proper image URL or placeholder
+					cost: parseFloat(product.price),
+					category: product.category.name,
+					remaining: product.stock_quantity,
+					distance: distance,
+				};
+			});
 			setProducts(formattedProducts);
 		} catch (error) {
 			console.error("Failed to fetch products:", error);
+			Alert.alert("Error", "Failed to fetch products.");
 		}
 	};
 
-	useEffect(() => {		
-		fetchProducts();
-	}, []);
+
+	const getCurrentLocation = async () => {
+		return new Promise((resolve, reject) => {
+			if ("geolocation" in navigator) {
+				navigator.geolocation.getCurrentPosition(
+					(position) => {
+						const { latitude, longitude } = position.coords;
+						setLocation({ latitude, longitude });
+						console.log(`Latitude: ${latitude}, Longitude: ${longitude}`);
+						resolve({ latitude, longitude });
+					},
+					(error) => {
+						console.error(error);
+						console.log("Failed to get location. Make sure location services are enabled.");
+						reject(error);
+					}
+				);
+			} else {
+				console.log("Geolocation is not supported by your browser.");
+				reject(new Error("Geolocation not supported"));
+			}
+		});
+	};
+
+	const fetchCartItems = async () => {
+		try {
+			const response = await getBasket();
+			const cartProductIds = response.data.items.map((item) => item.product.id);
+			setCartItems(cartProductIds);
+		} catch (error) {
+			console.error("Failed to fetch cart items:", error);
+			Alert.alert("Error", "Failed to fetch cart items.");
+		}
+	};
+
+	const fetchCategories = async () => {
+		try {
+			const categoryData = await getCategories();
+			const fetchedCategories = categoryData.map((category) => ({
+				id: category.id,
+				name: category.name,
+			}));
+			setCategories([{ id: 0, name: "All" }, ...fetchedCategories]);
+		} catch (error) {
+			console.error("Failed to fetch categories:", error);
+			Alert.alert("Error", "Failed to fetch categories.");
+		}
+	};
 
 	const onRefresh = async () => {
 		setRefreshing(true);
 		await fetchProducts();
+		await fetchCartItems();
+		await fetchCategories();
 		setRefreshing(false);
 	};
 
-	const filteredProducts = products.filter((product) => {
-		const matchesSearch =
-			product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			product.farm.toLowerCase().includes(searchQuery.toLowerCase());
-		const matchesCategory =
-			selectedCategory === "All" || product.category === selectedCategory;
-		return matchesSearch && matchesCategory;
-	});
-
 	const addToCart = async (product) => {
+		if (cartItems.includes(product.id)) {
+			Alert.alert("Already in Cart", `${product.title} is already in the cart.`);
+			return;
+		}
+
 		try {
-			const response = await addProductToCart({
+			await addProductToCart({
 				product_id: product.id,
 				quantity: 1,
 			});
-
-      console.log(response.data)
-
-			Alert.alert("Success", `${product.title} added to cart!`);
+			setCartItems((prev) => [...prev, product.id]);
+			Alert.alert("Added to Cart", `${product.title} has been added to the cart.`);
 		} catch (error) {
 			console.error("Failed to add product to cart:", error);
-			Alert.alert("Error", "Failed to add product to cart. Please try again.");
+			Alert.alert("Error", "Failed to add product to cart.");
 		}
 	};
 
-	const openProductDetails = (product) => {
-		setSelectedProduct(product);
-		setModalVisible(true);
+	const sortProducts = (products) => {
+		return products.sort((a, b) => {
+			switch (sortOption) {
+				case "priceAsc":
+					return a.cost - b.cost;
+				case "priceDesc":
+					return b.cost - a.cost;
+				case "quantityAsc":
+					return a.remaining - b.remaining;
+				case "quantityDesc":
+					return b.remaining - a.remaining;
+				case "distanceAsc":
+					return (a.distance || Infinity) - (b.distance || Infinity); // Handle missing distances
+				case "distanceDesc":
+					return (b.distance || -Infinity) - (a.distance || -Infinity); // Handle missing distances
+				default:
+					return 0;
+			}
+		});
 	};
 
-	const closeModal = () => {
-		setModalVisible(false);
-		setSelectedProduct(null);
-	};
-
-	const animateButton = () => {
-		Animated.sequence([
-			Animated.timing(buttonScale, {
-				toValue: 0.95,
-				duration: 100,
-				useNativeDriver: true,
-			}),
-			Animated.timing(buttonScale, {
-				toValue: 1,
-				duration: 100,
-				useNativeDriver: true,
-			}),
-		]).start();
-	};
+	const displayedProducts = sortProducts(
+		products.filter((product) => {
+			const matchesSearch =
+				product.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+				product.farm.toLowerCase().includes(searchQuery.toLowerCase());
+			const matchesCategory =
+				selectedCategory === "All" || product.category === selectedCategory;
+			return matchesSearch && matchesCategory;
+		})
+	);
 
 	const renderProductCard = ({ item }) => (
-		<SafeAreaView>
-		<TouchableOpacity
-			style={styles.card}
-			onPress={() => openProductDetails(item)}
-		>
-			<Image source={item.image} style={styles.productImage} />
+		<View style={styles.card}>
+			<View style={styles.cardImageContainer}>
+				<Text style={styles.cardImagePlaceholder}>Image</Text>
+			</View>
 			<View style={styles.cardContent}>
 				<Text style={styles.productTitle}>{item.title}</Text>
 				<Text style={styles.productFarm}>{item.farm}</Text>
-				<Text style={styles.productCategory}>{item.category}</Text>
+				{item.distance !== Infinity && (
+					<Text style={styles.productFarm}>Distance: {item.distance} km</Text>
+				)}
 				<Text style={styles.productCost}>${item.cost.toFixed(2)}</Text>
-				<Text style={styles.productRemaining}>Remaining: {item.remaining}</Text>
-				<Animated.View style={{ transform: [{ scale: buttonScale }] }}>
-					<TouchableOpacity
-						style={styles.addToCartButton}
-						onPress={() => {
-							animateButton();
-							addToCart(item);
-						}}
+				<Text style={styles.productRemaining}>Stock: {item.remaining}</Text>
+				<TouchableOpacity
+					style={[
+						styles.addToCartButton,
+						cartItems.includes(item.id) && styles.alreadyAddedButton,
+					]}
+					onPress={() => addToCart(item)}
+					disabled={cartItems.includes(item.id)}
+				>
+					<Text
+						style={[
+							styles.addToCartText,
+							cartItems.includes(item.id) && styles.alreadyAddedText,
+						]}
 					>
-						<Text style={styles.addToCartText}>Add to Cart</Text>
-					</TouchableOpacity>
-				</Animated.View>
+						{cartItems.includes(item.id) ? "Added to Cart" : "Add to Cart"}
+					</Text>
+				</TouchableOpacity>
 			</View>
-		</TouchableOpacity>
-		</SafeAreaView>
+		</View>
 	);
 
 	return (
 		<SafeAreaView style={styles.container}>
-  {/* Search Bar */}
-  <TextInput
-    style={styles.searchBar}
-    placeholder="Search by title or farm"
-    placeholderTextColor="#999"
-    value={searchQuery}
-    onChangeText={setSearchQuery}
-  />
+			<Text style={styles.header}>Products</Text>
+			<TextInput
+				style={styles.searchBar}
+				placeholder="Search by product or farm"
+				value={searchQuery}
+				onChangeText={setSearchQuery}
+			/>
 
-  {/* Category Filter Row */}
-  <ScrollView
-    horizontal
-    showsHorizontalScrollIndicator={false}
-    style={styles.categoryRow}
-  >
-    {categories.map((category) => (
-      <TouchableOpacity
-        key={category}
-        style={[
-          styles.categoryButton,
-          selectedCategory === category && styles.selectedCategoryButton,
-        ]}
-        onPress={() => setSelectedCategory(category)}
-      >
-        <Text
-          style={[
-            styles.categoryButtonText,
-            selectedCategory === category && styles.selectedCategoryButtonText,
-          ]}
-        >
-          {category}
-        </Text>
-      </TouchableOpacity>
-    ))}
-  </ScrollView>
+			<View style={styles.filters}>
+				<View style={styles.filter}>
+					<Text style={styles.filterLabel}>Category:</Text>
+					<Picker
+						selectedValue={selectedCategory}
+						style={styles.picker}
+						onValueChange={(itemValue) => setSelectedCategory(itemValue)}
+					>
+						{categories.map((category) => (
+							<Picker.Item
+								key={category.id}
+								label={category.name}
+								value={category.name}
+							/>
+						))}
+					</Picker>
+				</View>
 
-  {/* Product List */}
-  <FlatList
-    data={filteredProducts}
-    keyExtractor={(item) => item.id.toString()}
-    renderItem={renderProductCard}
-    contentContainerStyle={styles.productList}
-    refreshing={refreshing} // FlatList's pull-to-refresh
-    onRefresh={onRefresh}  // Pull-to-refresh handler
-  />
+				<View style={styles.filter}>
+					<Text style={styles.filterLabel}>Sort By:</Text>
+					<Picker
+						selectedValue={sortOption}
+						style={styles.picker}
+						onValueChange={(itemValue) => setSortOption(itemValue)}
+					>
+						<Picker.Item label="Price: Low to High" value="priceAsc" />
+						<Picker.Item label="Price: High to Low" value="priceDesc" />
+						<Picker.Item label="Stock: Low to High" value="quantityAsc" />
+						<Picker.Item label="Stock: High to Low" value="quantityDesc" />
+						<Picker.Item label="Distance: Nearest First" value="distanceAsc" />
+						<Picker.Item label="Distance: Farthest First" value="distanceDesc" />
+					</Picker>
+				</View>
+			</View>
 
-  {/* Product Details Modal */}
-  {selectedProduct && (
-    <Modal
-      animationType="slide"
-      transparent={true}
-      visible={modalVisible}
-      onRequestClose={closeModal}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-            <Text style={styles.closeButtonText}>X</Text>
-          </TouchableOpacity>
-          <Image source={selectedProduct.image} style={styles.modalImage} />
-          <Text style={styles.modalTitle}>{selectedProduct.title}</Text>
-          <Text style={styles.modalFarm}>{selectedProduct.farm}</Text>
-          <Text style={styles.modalCost}>
-            ${selectedProduct.cost.toFixed(2)}
-          </Text>
-          <Text style={styles.modalRemaining}>
-            Remaining: {selectedProduct.remaining}
-          </Text>
-          <Text style={styles.modalDescription}>
-            {selectedProduct.description}
-          </Text>
-          <TouchableOpacity
-            style={styles.addToCartButton}
-            onPress={() => {
-              addToCart(selectedProduct);
-              closeModal();
-            }}
-          >
-            <Text style={styles.addToCartText}>Add to Cart</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  )}
-</SafeAreaView>
-
+			<FlatList
+				data={displayedProducts}
+				keyExtractor={(item) => item.id.toString()}
+				renderItem={renderProductCard}
+				contentContainerStyle={styles.productList}
+				refreshing={refreshing}
+				onRefresh={onRefresh}
+			/>
+		</SafeAreaView>
 	);
 }
 
 const styles = StyleSheet.create({
-	container: {
-		flex: 1,
-		padding: 10,
-		backgroundColor: "#f7f7f7",
-	},
+	container: { flex: 1, padding: 15, backgroundColor: "#f9f9f9" },
+	header: { fontSize: 24, fontWeight: "bold", marginBottom: 10, color: "#333" },
 	searchBar: {
 		height: 50,
-		borderRadius: 8,
 		borderWidth: 1,
 		borderColor: "#ccc",
-		paddingHorizontal: 10,
-		marginBottom: 10,
+		borderRadius: 10,
+		paddingHorizontal: 15,
+		marginBottom: 15,
 		backgroundColor: "#fff",
 		fontSize: 16,
 	},
-	categoryButton: {
-		backgroundColor: "#fff",
-		borderWidth: 1,
-		borderColor: "#ccc",
-		borderRadius: 20,
-		paddingVertical: 8,
-		paddingHorizontal: 16,
-		marginRight: 10,
-	},
-	selectedCategoryButton: {
-		backgroundColor: "#4CAF50",
-		borderColor: "#4CAF50",
-	},
-	categoryButtonText: {
-		fontSize: 14,
-		color: "#333",
-	},
-	selectedCategoryButtonText: {
-		color: "#fff",
-		fontWeight: "bold",
-	},
-	productList: {
-		paddingBottom: 20,
-	},
+	filters: { flexDirection: "row", justifyContent: "space-between", marginBottom: 15 },
+	filter: { flex: 1, marginHorizontal: 5 },
+	filterLabel: { fontSize: 14, color: "#555", marginBottom: 5 },
+	picker: { height: 50, backgroundColor: "#fff", borderRadius: 10 },
 	card: {
 		flexDirection: "row",
 		backgroundColor: "#fff",
-		borderRadius: 8,
-		borderWidth: 1,
-		borderColor: "#ccc",
+		borderRadius: 10,
+		padding: 15,
 		marginBottom: 10,
-		overflow: "hidden",
-		elevation: 3,
+		shadowColor: "#000",
+		shadowOffset: { width: 0, height: 2 },
+		shadowOpacity: 0.1,
+		shadowRadius: 5,
+		elevation: 2,
 	},
-	productImage: {
-		width: 100,
-		height: 100,
-	},
-	cardContent: {
-		flex: 1,
-		padding: 10,
-		justifyContent: "space-between",
-	},
-	productTitle: {
-		fontSize: 16,
-		fontWeight: "bold",
-		color: "#333",
-	},
-	productFarm: {
-		fontSize: 14,
-		color: "#555",
-	},
-	productCategory: {
-		fontSize: 12,
-		color: "#999",
-	},
-	productCost: {
-		fontSize: 16,
-		fontWeight: "bold",
-		color: "#4CAF50",
-	},
-	productRemaining: {
-		fontSize: 12,
-		color: "#777",
-	},
-	addToCartButton: {
-		backgroundColor: "#4CAF50",
-		borderRadius: 8,
-		padding: 8,
-		marginTop: 5,
-		alignItems: "center",
-	},
-	addToCartText: {
-		color: "#fff",
-		fontSize: 14,
-		fontWeight: "bold",
-	},
-	modalOverlay: {
-		flex: 1,
+	cardImageContainer: {
+		width: 80,
+		height: 80,
+		borderRadius: 10,
+		backgroundColor: "#f0f0f0",
 		justifyContent: "center",
 		alignItems: "center",
-		backgroundColor: "rgba(0, 0, 0, 0.5)",
+		marginRight: 15,
 	},
-	modalContent: {
-		width: "90%",
-		backgroundColor: "#fff",
+	cardImagePlaceholder: { fontSize: 12, color: "#bbb" },
+	cardContent: { flex: 1, justifyContent: "space-between" },
+	productTitle: { fontSize: 16, fontWeight: "bold", color: "#333" },
+	productFarm: { fontSize: 14, color: "#555" },
+	productCost: { fontSize: 14, fontWeight: "bold", color: "#4CAF50" },
+	productRemaining: { fontSize: 12, color: "#999" },
+	addToCartButton: {
+		backgroundColor: "#4CAF50",
 		borderRadius: 10,
-		padding: 20,
+		padding: 10,
 		alignItems: "center",
-		maxHeight: "80%",
+		marginTop: 10,
 	},
-	modalImage: {
-		width: 150,
-		height: 150,
-		marginBottom: 10,
-	},
-	modalTitle: {
-		fontSize: 20,
-		fontWeight: "bold",
-		marginBottom: 5,
-	},
-	modalFarm: {
-		fontSize: 16,
-		color: "#555",
-		marginBottom: 5,
-	},
-	modalCost: {
-		fontSize: 18,
-		fontWeight: "bold",
-		color: "#4CAF50",
-		marginBottom: 10,
-	},
-	modalRemaining: {
-		fontSize: 14,
-		color: "#777",
-		marginBottom: 10,
-	},
-	modalDescription: {
-		fontSize: 14,
-		textAlign: "center",
-		color: "#555",
-		marginBottom: 10,
-	},
-	closeButton: {
-		position: "absolute",
-		top: 10,
-		right: 10,
-		backgroundColor: "#e0e0e0",
-		borderRadius: 15,
-		padding: 8,
-	},
-	closeButtonText: {
-		fontSize: 16,
-		fontWeight: "bold",
-		color: "#333",
-	},
+	addToCartText: { color: "#fff", fontWeight: "bold" },
+	alreadyAddedButton: { backgroundColor: "#ccc" },
+	alreadyAddedText: { color: "#555" },
 });

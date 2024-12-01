@@ -1,280 +1,264 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
-  ScrollView,
-  Linking,
-  SafeAreaView,
-  RefreshControl
-} from 'react-native';
-import * as ImagePicker from 'expo-image-picker';
-
-const initialFarmerData = {
-  id: 5,
-  email: "farmer@gmail.com",
-  first_name: "",
-  last_name: "",
-  phone: "",
-  avatar: null,
-  role: "Farmer",
-  info: {
-    rating: 0.0,
-    experience: 0,
-    bio: "",
-  },
-  socials: [],
-};
+	View,
+	Text,
+	TextInput,
+	TouchableOpacity,
+	Image,
+	StyleSheet,
+	ScrollView,
+	SafeAreaView,
+	Alert,
+} from "react-native";
+import * as ImagePicker from "expo-image-picker";
+import { getProfile, updateFarmerProfile } from "../../api/auth";
 
 export default function FarmerProfile() {
-  const [avatar, setAvatar] = useState(initialFarmerData.avatar);
-  const [firstName, setFirstName] = useState(initialFarmerData.first_name);
-  const [lastName, setLastName] = useState(initialFarmerData.last_name);
-  const [email, setEmail] = useState(initialFarmerData.email);
-  const [phone, setPhone] = useState(initialFarmerData.phone);
-  const [bio, setBio] = useState(initialFarmerData.info.bio);
-  const [experience, setExperience] = useState(initialFarmerData.info.experience);
-  const [rating, setRating] = useState(initialFarmerData.info.rating);
-  const [socials, setSocials] = useState(initialFarmerData.socials);
+	const [profileData, setProfileData] = useState({
+		id: 0,
+		email: "",
+		first_name: "",
+		last_name: "",
+		phone: "",
+		avatar: null,
+		role: "Farmer",
+		info: {
+			rating: 0.0,
+			experience: 0,
+			bio: "",
+		},
+	});
+	const [errors, setErrors] = useState({}); // Track validation errors
 
-  const handleAvatarUpload = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
+	useEffect(() => {
+		const fetchProfile = async () => {
+			try {
+				const data = await getProfile();
+				setProfileData({
+					...profileData,
+					...data,
+					info: {
+						...profileData.info,
+						...(data.info || {}),
+					},
+				});
+			} catch (error) {
+				console.error("Error fetching profile:", error.message);
+				Alert.alert("Error", "Failed to fetch profile.");
+			}
+		};
+		fetchProfile();
+	}, []);
 
-    if (!result.canceled) {
-      setAvatar(result.assets[0].uri);
-    }
-  };
+	const validateFields = () => {
+		const newErrors = {};
 
-  const addSocial = () => {
-    const newSocial = {
-      id: socials.length + 1,
-      platform: "",
-      url: "",
-    };
-    setSocials([...socials, newSocial]);
-  };
+		if (!profileData.first_name.trim()) newErrors.first_name = "First name is required.";
+		if (!profileData.last_name.trim()) newErrors.last_name = "Last name is required.";
+		if (!profileData.phone.trim()) newErrors.phone = "Phone number is required.";
+		if (!profileData.info.bio.trim()) newErrors.bio = "Bio is required.";
+		if (!profileData.info.experience || isNaN(profileData.info.experience))
+			newErrors.experience = "Experience must be a valid number.";
 
-  const updateSocial = (index, key, value) => {
-    const updatedSocials = [...socials];
-    updatedSocials[index][key] = value;
-    setSocials(updatedSocials);
-  };
+		setErrors(newErrors);
+		return Object.keys(newErrors).length === 0;
+	};
 
-  const saveProfile = () => {
-    const updatedProfile = {
-      first_name: firstName,
-      last_name: lastName,
-      email,
-      phone,
-      avatar,
-      info: {
-        rating,
-        experience,
-        bio,
-      },
-      socials,
-    };
+	const handleInputChange = (field, value) => {
+		setProfileData((prevState) => ({
+			...prevState,
+			[field]: value,
+		}));
+		setErrors((prevErrors) => ({
+			...prevErrors,
+			[field]: null,
+		}));
+	};
 
-    console.log("Saving profile to database:", updatedProfile);
-    alert("Profile saved successfully!");
-  };
+	const handleInfoChange = (field, value) => {
+		setProfileData((prevState) => ({
+			...prevState,
+			info: {
+				...prevState.info,
+				[field]: value,
+			},
+		}));
+		setErrors((prevErrors) => ({
+			...prevErrors,
+			[field]: null,
+		}));
+	};
 
-  const openSocialLink = (url) => {
-    Linking.openURL(url).catch((err) => console.error("Failed to open URL:", err));
-  };
+	const handleAvatarUpload = async () => {
+		try {
+			const result = await ImagePicker.launchImageLibraryAsync({
+				mediaTypes: ImagePicker.MediaTypeOptions.Images,
+				allowsEditing: true,
+				aspect: [1, 1],
+				quality: 1,
+			});
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20 }}>
-        {/* Avatar Section */}
-        <View style={styles.avatarContainer}>
-          <TouchableOpacity onPress={handleAvatarUpload}>
-            <Image
-              source={avatar ? { uri: avatar } : require('../../assets/images/default-avatar.png')}
-              style={styles.avatar}
-            />
-            <Text style={styles.avatarText}>Upload Avatar</Text>
-          </TouchableOpacity>
-        </View>
+			if (!result.canceled && result.assets && result.assets.length > 0) {
+				setProfileData((prevData) => ({
+					...prevData,
+					avatar: result.assets[0].uri,
+				}));
+			} else {
+				Alert.alert("Upload Cancelled", "No image selected.");
+			}
+		} catch (error) {
+			console.error("Error uploading avatar:", error.message);
+			Alert.alert("Error", "Failed to upload avatar.");
+		}
+	};
 
-        {/* Profile Fields */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>First Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your first name"
-            value={firstName}
-            onChangeText={setFirstName}
-          />
+	const saveProfile = async () => {
+		if (!validateFields()) {
+			Alert.alert("Validation Error", "Please correct the highlighted fields.");
+			console.log("Validation Error", "Please correct the highlighted fields.");
+			return;
+		}
 
-          <Text style={styles.label}>Last Name</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your last name"
-            value={lastName}
-            onChangeText={setLastName}
-          />
+		try {
+			await updateFarmerProfile(profileData);
+			console.log("Profile updated successfully!");
+			Alert.alert("Success", "Profile updated successfully!");
+		} catch (error) {
+			console.error("Error saving profile:", error);
+			Alert.alert("Error", "Failed to save profile.");
+		}
+	};
 
-          <Text style={styles.label}>Email</Text>
-          <TextInput
-            style={[styles.input, styles.disabledInput]}
-            value={email}
-            editable={false}
-          />
+	return (
+		<SafeAreaView style={styles.container}>
+			<ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20 }}>
+				{/* Avatar Section */}
+				<View style={styles.avatarContainer}>
+					<TouchableOpacity onPress={handleAvatarUpload}>
+						<Image
+							source={
+								profileData.avatar
+									? { uri: profileData.avatar }
+									: require("../../assets/images/default-avatar.png")
+							}
+							style={styles.avatar}
+						/>
+						<Text style={styles.avatarText}>Upload Avatar</Text>
+					</TouchableOpacity>
+				</View>
 
-          <Text style={styles.label}>Phone</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your phone number"
-            value={phone}
-            onChangeText={setPhone}
-          />
+				{/* Input Fields */}
+				{["first_name", "last_name", "phone"].map((field) => (
+					<View style={styles.fieldContainer} key={field}>
+						<Text style={styles.label}>
+							{field.replace("_", " ").toUpperCase()}
+						</Text>
+						<TextInput
+							style={styles.input}
+							placeholder={`Enter your ${field.replace("_", " ")}`}
+							value={profileData[field]}
+							onChangeText={(text) => handleInputChange(field, text)}
+						/>
+						{errors[field] && (
+							<Text style={styles.errorText}>{errors[field]}</Text>
+						)}
+					</View>
+				))}
 
-          <Text style={styles.label}>Bio</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your bio"
-            value={bio}
-            onChangeText={setBio}
-          />
+				{/* Bio Field */}
+				<View style={styles.fieldContainer}>
+					<Text style={styles.label}>Bio</Text>
+					<TextInput
+						style={styles.input}
+						placeholder="Enter your bio"
+						value={profileData.info.bio}
+						onChangeText={(text) => handleInfoChange("bio", text)}
+					/>
+					{errors.bio && <Text style={styles.errorText}>{errors.bio}</Text>}
+				</View>
 
-          <Text style={styles.label}>Experience (Years)</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your experience"
-            value={String(experience)}
-            keyboardType="numeric"
-            onChangeText={(value) => setExperience(Number(value))}
-          />
+				{/* Experience Field */}
+				<View style={styles.fieldContainer}>
+					<Text style={styles.label}>Experience (Years)</Text>
+					<TextInput
+						style={styles.input}
+						placeholder="Enter your experience"
+						value={String(profileData.info.experience)}
+						keyboardType="numeric"
+						onChangeText={(value) =>
+							handleInfoChange("experience", parseInt(value, 10) || 0)
+						}
+					/>
+					{errors.experience && (
+						<Text style={styles.errorText}>{errors.experience}</Text>
+					)}
+				</View>
 
-          <Text style={styles.label}>Rating</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Enter your rating"
-            value={String(rating)}
-            keyboardType="numeric"
-            onChangeText={(value) => setRating(Number(value))}
-          />
-        </View>
-
-        {/* Social Links */}
-        <View style={styles.fieldContainer}>
-          <Text style={styles.label}>Social Links</Text>
-          {socials.map((social, index) => (
-            <View key={social.id} style={styles.socialRow}>
-              <TextInput
-                style={[styles.input, styles.socialInput]}
-                placeholder="Platform (e.g., Facebook)"
-                value={social.platform}
-                onChangeText={(value) => updateSocial(index, "platform", value)}
-              />
-              <TextInput
-                style={[styles.input, styles.socialInput]}
-                placeholder="URL (e.g., https://facebook.com)"
-                value={social.url}
-                onChangeText={(value) => updateSocial(index, "url", value)}
-              />
-            </View>
-          ))}
-          <TouchableOpacity style={styles.addSocialButton} onPress={addSocial}>
-            <Text style={styles.addSocialButtonText}>Add Social Link</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Save Button */}
-        <TouchableOpacity style={styles.saveButton} onPress={saveProfile}>
-          <Text style={styles.saveButtonText}>Save Profile</Text>
-        </TouchableOpacity>
-      </ScrollView>
-    </SafeAreaView>
-    
-  );
+				{/* Save Button */}
+				<TouchableOpacity style={styles.saveButton} onPress={saveProfile}>
+					<Text style={styles.saveButtonText}>Save Profile</Text>
+				</TouchableOpacity>
+			</ScrollView>
+		</SafeAreaView>
+	);
 }
 
 const styles = StyleSheet.create({
-  container: {
-    padding: 20,
-    backgroundColor: "#f7f7f7",
-    flex: 1,
-  },
-  avatarContainer: {
-    alignItems: "center",
-    marginBottom: 20,
-  },
-  avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    backgroundColor: "#e0e0e0",
-  },
-  avatarText: {
-    marginTop: 10,
-    color: "#4CAF50",
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  fieldContainer: {
-    marginBottom: 20,
-  },
-  label: {
-    fontSize: 16,
-    fontWeight: "bold",
-    marginBottom: 5,
-    color: "#333",
-  },
-  input: {
-    height: 50,
-    borderColor: "#ccc",
-    borderWidth: 1,
-    borderRadius: 8,
-    paddingHorizontal: 10,
-    marginBottom: 15,
-    backgroundColor: "#fff",
-  },
-  disabledInput: {
-    backgroundColor: "#e0e0e0",
-    color: "#999",
-  },
-  socialRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 10,
-  },
-  socialInput: {
-    flex: 1,
-    marginHorizontal: 5,
-  },
-  addSocialButton: {
-    backgroundColor: "#4CAF50",
-    padding: 10,
-    borderRadius: 8,
-    alignItems: "center",
-    marginTop: 10,
-  },
-  addSocialButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  saveButton: {
-    backgroundColor: "#4CAF50",
-    paddingVertical: 15,
-    borderRadius: 8,
-    alignItems: "center",
-  },
-  saveButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+	container: {
+		flex: 1,
+		padding: 20,
+		backgroundColor: "#f7f7f7",
+	},
+	avatarContainer: {
+		alignItems: "center",
+		marginBottom: 20,
+	},
+	avatar: {
+		width: 120,
+		height: 120,
+		borderRadius: 60,
+		borderWidth: 1,
+		borderColor: "#ccc",
+		backgroundColor: "#e0e0e0",
+	},
+	avatarText: {
+		marginTop: 10,
+		color: "#4CAF50",
+		fontSize: 14,
+		fontWeight: "bold",
+	},
+	fieldContainer: {
+		marginBottom: 20,
+	},
+	label: {
+		fontSize: 16,
+		fontWeight: "bold",
+		marginBottom: 5,
+		color: "#333",
+	},
+	input: {
+		height: 50,
+		borderColor: "#ccc",
+		borderWidth: 1,
+		borderRadius: 8,
+		paddingHorizontal: 10,
+		marginBottom: 5,
+		backgroundColor: "#fff",
+	},
+	errorText: {
+		color: "red",
+		fontSize: 12,
+		marginTop: 2,
+	},
+	saveButton: {
+		backgroundColor: "#4CAF50",
+		paddingVertical: 15,
+		borderRadius: 8,
+		alignItems: "center",
+	},
+	saveButtonText: {
+		color: "#fff",
+		fontSize: 16,
+		fontWeight: "bold",
+	},
 });

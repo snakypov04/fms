@@ -11,6 +11,7 @@ export const login = async (email, password) => {
 
 		await storeData("refresh", refresh);
 		await storeData("access", access);
+		await storeData("user_email", email);
 
 		return { refresh, access };
 	} catch (error) {
@@ -37,7 +38,7 @@ export const register = async (data) => {
 
 		console.log(response.data);
 	} catch (e) {
-		throw Error(`Error occured in buyer registration: ${e}`);
+		throw Error(`Error occured in registration: ${e}`);
 	}
 };
 
@@ -105,7 +106,7 @@ export const getProfile = async () => {
 	}
 };
 
-export const updateProfile = async (userData) => {
+export const updateBuyerProfile = async (userData) => {
 	try {
 		const formData = new FormData();
 
@@ -128,6 +129,52 @@ export const updateProfile = async (userData) => {
 	} catch (error) {
 		console.error("Error updating profile:", error);
 		throw error;
+	}
+};
+
+export const updateFarmerProfile = async (userData) => {
+	try {
+		// Prepare the data as JSON
+		const updatedData = {
+			first_name: userData.first_name,
+			last_name: userData.last_name,
+			email: userData.email,
+			phone: userData.phone,
+			delivery_address: "dome",
+			payment_method: "Card",
+			experience: userData.info.experience,
+			bio: userData.info.bio,
+		};
+
+		console.log(updatedData)
+
+
+		// Send the updated data as JSON in the PUT request
+		const response = await apiClient.put("/profile/", updatedData, {
+			headers: {
+				"Content-Type": "application/json", // Set content type to JSON
+			},
+		});
+
+		return response.data;
+	} catch (error) {
+		console.error("Error updating profile:", error);
+		throw error;
+	}
+};
+
+export const addSocials = async ({ platform, url }) => {
+	try {
+		const response = await apiClient.post("/socials/", {
+			platform,
+			url,
+		});
+
+		if (response.status !== 201) {
+			throw Error("Some error occurred when adding socials: " + response.data);
+		}
+	} catch (e) {
+		throw Error(`Error when adding socials: ${e}`);
 	}
 };
 

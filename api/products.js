@@ -1,8 +1,9 @@
 import { apiClient } from "./config";
 
-export const getProducts = async () => {
+export const getProducts = async (latitude, longitude) => {
 	try {
-		const response = await apiClient.get("/products/");
+		const response = await apiClient.get("/products?latitude=" + latitude + "&longitude=" + longitude);
+		console.log(response.data);
 		return response;
 	} catch (e) {
 		throw Error(`Error listing products: ${e}`);
@@ -31,3 +32,29 @@ export const getBasket = async () => {
 		throw Error(`Error getting basket: ${e}`);
 	}
 };
+
+export const updateCartQuantities = async (updates) => {
+  try {
+    if (!Array.isArray(updates) || updates.length === 0) {
+      throw new Error("Invalid updates. Provide a non-empty array of updates.");
+    }
+
+    const response = await apiClient.patch("/basket-items/", {
+      updates,
+    });
+
+    return response.data;
+  } catch (e) {
+    throw new Error(`Error updating cart quantities: ${e}`);
+  }
+};
+
+
+export const apiPlaceOrder = async () => {
+	try {
+		const response = await apiClient.post("/orders/");
+		return response;
+	} catch (e) {
+		throw Error(`Error placing order: ${e}`);
+	}
+}

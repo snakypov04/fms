@@ -17,19 +17,23 @@ import {
 	getProductsFromInventory,
 	addProductToInventory,
 	getCategories,
+	updateProductInInventory,
+	deleteProductFromInventory,
 } from "../../api/inventory";
 import RNPickerSelect from "react-native-picker-select";
 import { useLocalSearchParams } from "expo-router";
 
 const FarmDetails = () => {
-	const { farm_id } = useLocalSearchParams(); // Get the farm_id from navigation parameters
+	const { farm_id } = useLocalSearchParams(); // Get farm_id from navigation parameters
 	const [farm, setFarm] = useState(null);
 	const [products, setProducts] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [categories, setCategories] = useState([]);
 	const [loadingCategories, setLoadingCategories] = useState(true);
 	const [modalVisible, setModalVisible] = useState(false);
+	const [editMode, setEditMode] = useState(false);
 	const [productData, setProductData] = useState({
+		id: null, // Include ID for updating
 		name: "",
 		description: "",
 		price: "",
@@ -38,23 +42,75 @@ const FarmDetails = () => {
 		farm: farm_id,
 	});
 
+	// Open modal for adding or editing product
+	const openProductModal = (product = null) => {
+		if (product) {
+			setProductData({
+				id: product.id, // Include ID for editing
+				name: product.name,
+				description: product.description,
+				price: String(product.price),
+				stock_quantity: String(product.stock_quantity),
+				category: product.category?.id || 0,
+				farm: farm_id,
+			});
+			setEditMode(true); // Enable edit mode
+		} else {
+			setProductData({
+				id: null,
+				name: "",
+				description: "",
+				price: "",
+				stock_quantity: "",
+				category: 0,
+				farm: farm_id,
+			});
+			setEditMode(false); // Disable edit mode
+		}
+		setModalVisible(true);
+	};
+
+	// Handle saving or updating a product
+	const handleSaveProduct = async () => {
+		if (!productData.name || !productData.price || !productData.stock_quantity) {
+			Alert.alert("Error", "All fields are required.");
+			return;
+		}
+
+		try {
+			if (editMode) {
+				// Update product
+				await updateProductInInventory(productData);
+				Alert.alert("Success", "Product updated successfully!");
+			} else {
+				// Add a new product
+				await addProductToInventory(productData);
+				Alert.alert("Success", "Product added successfully!");
+			}
+			setModalVisible(false);
+			await fetchProducts(); // Refresh product list
+		} catch (error) {
+			Alert.alert("Error", "Failed to save the product.");
+		}
+	};
+
 	// Fetch farm details
 	useEffect(() => {
 		const fetchFarmDetails = async () => {
 			try {
 				const farmData = await getFarm(farm_id);
 				setFarm(farmData);
-				await fetchProducts(); // Fetch products related to the farm
+				await fetchProducts(); // Fetch products for the farm
 			} catch (error) {
 				console.error("Error fetching farm details:", error);
 			} finally {
 				setLoading(false);
 			}
 		};
-
 		fetchFarmDetails();
 	}, [farm_id]);
 
+	// Fetch categories for products
 	useEffect(() => {
 		const fetchCategories = async () => {
 			try {
@@ -66,7 +122,6 @@ const FarmDetails = () => {
 				setLoadingCategories(false);
 			}
 		};
-
 		fetchCategories();
 	}, []);
 
@@ -74,38 +129,13 @@ const FarmDetails = () => {
 	const fetchProducts = async () => {
 		try {
 			const productsData = await getProductsFromInventory(farm_id);
-			console.log(productData);
 			setProducts(productsData);
 		} catch (error) {
 			Alert.alert("Error", "Failed to fetch products.");
 		}
 	};
 
-	// Handle product creation
-	const handleAddProduct = async () => {
-		if (!productData.category) {
-			Alert.alert("Error", "Please select a category.");
-			return;
-		}
-
-		try {
-			await addProductToInventory({ ...productData, farm_id });
-			Alert.alert("Success", "Product added successfully!");
-			setModalVisible(false);
-			setProductData({
-				name: "",
-				description: "",
-				price: "",
-				stock_quantity: "",
-				category: "", // Reset category
-				farm: farm_id,
-			});
-			await fetchProducts();
-		} catch (error) {
-			Alert.alert("Error", "Failed to add the product.");
-		}
-	};
-
+	// Render loading state
 	if (loading) {
 		return (
 			<View style={styles.loadingContainer}>
@@ -115,6 +145,18 @@ const FarmDetails = () => {
 		);
 	}
 
+	const handleDeleteProduct = async () => {
+		try {
+			await deleteProductFromInventory(productData.id);
+			Alert.alert("Success", "Product deleted successfully!");
+			setModalVisible(false);
+			await fetchProducts(); // Refresh product list
+		} catch (error) {
+			Alert.alert("Error", "Failed to delete the product.");
+		}
+	}
+
+	// Render error state
 	if (!farm) {
 		return (
 			<View style={styles.container}>
@@ -125,6 +167,7 @@ const FarmDetails = () => {
 
 	return (
 		<ScrollView style={styles.container}>
+			{/* Farm Details */}
 			<View style={styles.header}>
 				<Image
 					source={{
@@ -138,9 +181,11 @@ const FarmDetails = () => {
 
 			<View style={styles.detailsCard}>
 				<Text style={styles.sectionTitle}>Farm Information</Text>
-				<Text style={styles.detail}>
-					<Text style={styles.label}>Geo Location:</Text> {farm.geo_loc}
-				</Text>
+				{farm.latitude && farm.longitude && (
+					<Text style={styles.detail}>
+						<Text style={styles.label}>Geo Location:</Text> {farm.latitude}, {farm.longitude}
+					</Text>
+				)}
 				<Text style={styles.detail}>
 					<Text style={styles.label}>Size:</Text> {farm.size}
 				</Text>
@@ -148,16 +193,15 @@ const FarmDetails = () => {
 					<Text style={styles.label}>Crops:</Text> {farm.crop_types}
 				</Text>
 				<Text style={styles.detail}>
-					<Text style={styles.label}>Verified:</Text>{" "}
-					{farm.is_verified ? "Yes" : "No"}
+					<Text style={styles.label}>Verified:</Text> {farm.is_verified ? "Yes" : "No"}
 				</Text>
 			</View>
 
+			{/* Farmer Details */}
 			<View style={styles.detailsCard}>
 				<Text style={styles.sectionTitle}>Farmer Information</Text>
 				<Text style={styles.detail}>
-					<Text style={styles.label}>Name:</Text> {farm.farmer.first_name}{" "}
-					{farm.farmer.last_name}
+					<Text style={styles.label}>Name:</Text> {farm.farmer.first_name} {farm.farmer.last_name}
 				</Text>
 				<Text style={styles.detail}>
 					<Text style={styles.label}>Email:</Text> {farm.farmer.email}
@@ -166,24 +210,22 @@ const FarmDetails = () => {
 					<Text style={styles.label}>Phone:</Text> {farm.farmer.phone}
 				</Text>
 				<Text style={styles.detail}>
-					<Text style={styles.label}>Experience:</Text>{" "}
-					{farm.farmer.info.experience || "N/A"} years
+					<Text style={styles.label}>Experience:</Text> {farm.farmer.info.experience || "N/A"} years
 				</Text>
 				<Text style={styles.detail}>
-					<Text style={styles.label}>Rating:</Text>{" "}
-					{farm.farmer.info.rating || "Not rated"}
+					<Text style={styles.label}>Rating:</Text> {farm.farmer.info.rating || "Not rated"}
 				</Text>
 			</View>
 
 			{/* Create Product Button */}
 			<TouchableOpacity
 				style={styles.addButton}
-				onPress={() => setModalVisible(true)}
+				onPress={() => openProductModal()}
 			>
 				<Text style={styles.addButtonText}>Create Product</Text>
 			</TouchableOpacity>
 
-			{/* List of Products */}
+			{/* Products List */}
 			<View style={styles.detailsCard}>
 				<Text style={styles.sectionTitle}>Products</Text>
 				<FlatList
@@ -196,17 +238,22 @@ const FarmDetails = () => {
 							<Text>Price: ${item.price}</Text>
 							<Text>Stock: {item.stock_quantity}</Text>
 							<Text>Category: {item.category?.name || "N/A"}</Text>
+							{/* Edit Button */}
+							<TouchableOpacity
+								style={styles.addButton}
+								onPress={() => openProductModal(item)}
+							>
+								<Text style={styles.addButtonText}>Edit</Text>
+							</TouchableOpacity>
 						</View>
 					)}
 					ListEmptyComponent={
-						<Text style={styles.emptyText}>
-							No products available for this farm.
-						</Text>
+						<Text style={styles.emptyText}>No products available for this farm.</Text>
 					}
 				/>
 			</View>
 
-			{/* Modal for Creating Product */}
+			{/* Modal for Creating/Editing Product */}
 			<Modal
 				animationType="slide"
 				transparent={true}
@@ -215,19 +262,17 @@ const FarmDetails = () => {
 			>
 				<View style={styles.modalContainer}>
 					<View style={styles.modalContent}>
-						<Text style={styles.modalTitle}>Create Product</Text>
+						<Text style={styles.modalTitle}>
+							{editMode ? "Edit Product" : "Create Product"}
+						</Text>
 
-						{/* Name Input */}
+						{/* Product Inputs */}
 						<TextInput
 							style={styles.input}
 							placeholder="Product Name"
 							value={productData.name}
-							onChangeText={(text) =>
-								setProductData((prev) => ({ ...prev, name: text }))
-							}
+							onChangeText={(text) => setProductData((prev) => ({ ...prev, name: text }))}
 						/>
-
-						{/* Description Input */}
 						<TextInput
 							style={styles.input}
 							placeholder="Description"
@@ -236,27 +281,21 @@ const FarmDetails = () => {
 								setProductData((prev) => ({ ...prev, description: text }))
 							}
 						/>
-
-						{/* Price Input */}
 						<TextInput
 							style={styles.input}
 							placeholder="Price"
 							value={productData.price}
-							onChangeText={(text) =>
-								setProductData((prev) => ({ ...prev, price: text }))
-							}
 							keyboardType="numeric"
+							onChangeText={(text) => setProductData((prev) => ({ ...prev, price: text }))}
 						/>
-
-						{/* Stock Quantity Input */}
 						<TextInput
 							style={styles.input}
 							placeholder="Stock Quantity"
 							value={productData.stock_quantity}
+							keyboardType="numeric"
 							onChangeText={(text) =>
 								setProductData((prev) => ({ ...prev, stock_quantity: text }))
 							}
-							keyboardType="numeric"
 						/>
 
 						{/* Category Picker */}
@@ -279,19 +318,23 @@ const FarmDetails = () => {
 								style={{
 									inputIOS: styles.pickerInput,
 									inputAndroid: styles.pickerInput,
-									placeholder: styles.pickerPlaceholder,
-									iconContainer: styles.pickerIconContainer,
 								}}
 							/>
 						)}
 
 						{/* Save Button */}
-						<TouchableOpacity
-							style={styles.saveButton}
-							onPress={handleAddProduct}
-						>
-							<Text style={styles.saveButtonText}>Save</Text>
+						<TouchableOpacity style={styles.saveButton} onPress={handleSaveProduct}>
+							<Text style={styles.saveButtonText}>
+								{editMode ? "Update" : "Save"}
+							</Text>
 						</TouchableOpacity>
+
+						<TouchableOpacity style={styles.saveButton} onPress={handleDeleteProduct}>
+							<Text style={styles.saveButtonText}>
+								Delete
+							</Text>
+						</TouchableOpacity>
+
 
 						{/* Cancel Button */}
 						<TouchableOpacity
@@ -306,6 +349,7 @@ const FarmDetails = () => {
 		</ScrollView>
 	);
 };
+
 
 const styles = StyleSheet.create({
 	container: {
@@ -494,6 +538,10 @@ const styles = StyleSheet.create({
 		top: 10,
 		right: 10,
 	},
+	editButtonText: {
+		color: "#2d6a4f",
+		fontWeight: "bold",
+	}
 });
 
 export default FarmDetails;

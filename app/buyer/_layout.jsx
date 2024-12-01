@@ -4,6 +4,7 @@ import Profile from './Profile';
 import Products from './Products';
 import Cart from './Cart';
 import { Ionicons } from '@expo/vector-icons';
+import Orders from './Orders';
 
 const Tab = createBottomTabNavigator();
 
@@ -25,6 +26,9 @@ export default function BuyerLayout() {
             case 'Profile':
               iconName = focused ? 'person' : 'person-outline';
               break;
+            case 'My Orders':
+              iconName = focused ? 'list' : 'list-outline';
+              break;
             default:
               iconName = 'help-circle-outline'; // Fallback icon
           }
@@ -39,6 +43,8 @@ export default function BuyerLayout() {
       <Tab.Screen name="Profile" component={Profile} />
       <Tab.Screen name="Products" component={Products} />
       <Tab.Screen name="Cart" component={Cart} />
+      <Tab.Screen name="My Orders" component={Orders} />
+
     </Tab.Navigator>
   );
 }
