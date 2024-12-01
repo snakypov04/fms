@@ -11,6 +11,7 @@ export const login = async (email, password) => {
 
 		await storeData("refresh", refresh);
 		await storeData("access", access);
+		await storeData("user_email", email);
 
 		return { refresh, access };
 	} catch (error) {
@@ -37,7 +38,7 @@ export const register = async (data) => {
 
 		console.log(response.data);
 	} catch (e) {
-		throw Error(`Error occured in buyer registration: ${e}`);
+		throw Error(`Error occured in registration: ${e}`);
 	}
 };
 
