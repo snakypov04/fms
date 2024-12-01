@@ -31,3 +31,20 @@ export const getBasket = async () => {
 		throw Error(`Error getting basket: ${e}`);
 	}
 };
+
+export const updateCartQuantities = async (updates) => {
+  try {
+    if (!Array.isArray(updates) || updates.length === 0) {
+      throw new Error("Invalid updates. Provide a non-empty array of updates.");
+    }
+
+    const response = await apiClient.patch("/basket-items/", {
+      updates,
+    });
+
+    return response.data;
+  } catch (e) {
+    throw new Error(`Error updating cart quantities: ${e.message}`);
+  }
+};
+
