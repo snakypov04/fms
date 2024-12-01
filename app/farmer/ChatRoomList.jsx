@@ -30,10 +30,10 @@ const ChatRoomsList = () => {
         fetchRooms();
 
         // Set up polling every 10 seconds (10000 ms)
-        const intervalId = setInterval(fetchRooms, 10000);
+        // const intervalId = setInterval(fetchRooms, 30000);
 
         // Clear interval on component unmount
-        return () => clearInterval(intervalId);
+        // return () => clearInterval(intervalId);
     }, []);  // Empty dependency array to run on mount and unmount
 
     const handleRoomPress = (roomName) => {

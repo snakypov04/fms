@@ -1,69 +1,118 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
-import { getMessages } from "../../api/chat";  // Assuming this function fetches messages from API
+import { getMessages } from "../../api/chat";
+import { getData } from "../../utils/asyncStorage";
 
 const Chat = () => {
-    const { roomName } = useLocalSearchParams(); // Get the room_name from navigation parameters
-    console.log(roomName); // Log the room_name to the console
-
+    const { roomName } = useLocalSearchParams();
     const [messages, setMessages] = useState([]);
     const [input, setInput] = useState("");
-    const [companionName, setCompanionName] = useState(""); // Companion's name from API
-    const [companionEmail, setCompanionEmail] = useState(""); // Companion's email, if you want to display
+    const [userId, setUserId] = useState(null);
+    const [userEmail, setUserEmail] = useState(null); // Store user's email
+    const ws = useRef(null);
+    const flatListRef = useRef();
 
     useEffect(() => {
         fetchMessages();
+        fetchUserId();
+        connectWebSocket();
+        return () => {
+            if (ws.current) ws.current.close();
+        };
     }, []);
 
+    const fetchUserId = async () => {
+        const userIdFromStorage = await getData("user_id");
+        const userEmailFromStorage = await getData("user_email"); // Assuming email is stored
+        setUserId(userIdFromStorage);
+        setUserEmail(userEmailFromStorage);
+    };
+
     const fetchMessages = async () => {
-        const messagesData = await getMessages(roomName);
-        if (messagesData && messagesData.companion) {
-            setCompanionName(messagesData.companion.full_name); // Set companion name from API
-            setCompanionEmail(messagesData.companion.email); // Optional: If you need the companion's email
-            setMessages(messagesData.messages); // Set messages from API
+        try {
+            const messagesData = await getMessages(roomName);
+            setMessages(messagesData.messages);
+        } catch (error) {
+            console.error("Error fetching messages:", error.message);
         }
+    };
+
+    const connectWebSocket = async () => {
+        const token = await getData("access");
+        const url = `ws://localhost:8000/ws/chat/${roomName}/?token=${token}`;
+        ws.current = new WebSocket(url);
+
+        ws.current.onopen = () => {
+            console.log("WebSocket connected");
+        };
+
+        ws.current.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            console.log("Message received from WebSocket:", data);
+            if (data.sender !== userEmail) { // Prevent sending the message back to the sender
+                setMessages((prevMessages) => [
+                    ...prevMessages,
+                    {
+                        message: data.message,
+                        sender: data.sender,
+                        who: data.sender === userEmail ? "me" : "companion",
+                    },
+                ]);
+            }
+        };
+
+        ws.current.onerror = (error) => console.log("WebSocket error: ", error);
+
+        ws.current.onclose = () => console.log("WebSocket connection closed");
     };
 
     const handleSend = () => {
         if (input.trim()) {
-            setMessages([
-                ...messages,
-                { sender_id: 4, message: input, timestamp: new Date().toISOString(), who: "me" }, // New message from "me"
-            ]);
-            setInput("");
+            const messageData = {
+                message: input,
+                sender_id: userId,
+                sender: userEmail, // Send email to identify the sender
+            };
+
+            if (ws.current) {
+                ws.current.send(JSON.stringify(messageData));
+            }
+
+            // Don't add the message to the state here, let WebSocket handle it
+            setInput(""); // Clear the input field
         }
     };
 
     const renderMessage = ({ item }) => (
-        <View
-            style={[
-                styles.messageContainer,
-                item.who === "me" ? styles.myMessage : styles.companionMessage,
-            ]}
-        >
+        <View style={[styles.messageContainer, item.who === "me" ? styles.myMessage : styles.companionMessage]}>
             <Text style={styles.messageText}>{item.message}</Text>
         </View>
     );
 
+    const scrollToBottom = () => {
+        flatListRef.current.scrollToEnd({ animated: true });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
     return (
         <View style={styles.container}>
-            {/* Companion's Name at the Top */}
             <View style={styles.header}>
-                <Text style={styles.companionName}>{companionName}</Text>
+                <Text style={styles.companionName}>Companion</Text>
             </View>
 
-            {/* Chat Messages */}
             <FlatList
+                ref={flatListRef}
                 data={messages}
                 renderItem={renderMessage}
-                keyExtractor={(item, index) => index.toString()} // Use index as key for dynamic messages
+                keyExtractor={(item, index) => index.toString()}
                 style={styles.messageList}
-                inverted // Invert to show latest message at the bottom
             />
 
-            {/* Input Area */}
             <View style={styles.inputContainer}>
                 <TextInput
                     style={styles.input}
@@ -80,64 +129,17 @@ const Chat = () => {
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#f5f5f5",
-    },
-    header: {
-        padding: 10,
-        backgroundColor: "#4caf50",
-        alignItems: "center",
-    },
-    companionName: {
-        fontSize: 18,
-        fontWeight: "bold",
-        color: "white",
-    },
-    messageList: {
-        flex: 1,
-        padding: 10,
-    },
-    messageContainer: {
-        padding: 10,
-        borderRadius: 10,
-        marginVertical: 5,
-        maxWidth: "80%",
-    },
-    myMessage: {
-        alignSelf: "flex-end",
-        backgroundColor: "#4caf50",
-    },
-    companionMessage: {
-        alignSelf: "flex-start",
-        backgroundColor: "#e0e0e0",
-    },
-    messageText: {
-        color: "#fff",
-    },
-    inputContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        padding: 10,
-        backgroundColor: "#ffffff",
-        borderTopWidth: 1,
-        borderTopColor: "#e0e0e0",
-    },
-    input: {
-        flex: 1,
-        height: 40,
-        borderWidth: 1,
-        borderColor: "#e0e0e0",
-        borderRadius: 20,
-        paddingHorizontal: 10,
-        backgroundColor: "#f9f9f9",
-    },
-    sendButton: {
-        marginLeft: 10,
-        backgroundColor: "#4caf50",
-        padding: 10,
-        borderRadius: 20,
-    },
+    container: { flex: 1, backgroundColor: "#f5f5f5" },
+    header: { padding: 10, backgroundColor: "#4caf50", alignItems: "center" },
+    companionName: { fontSize: 18, fontWeight: "bold", color: "white" },
+    messageList: { flex: 1, padding: 10 },
+    messageContainer: { padding: 10, borderRadius: 10, marginVertical: 5, maxWidth: "80%" },
+    myMessage: { alignSelf: "flex-end", backgroundColor: "#4caf50" },
+    companionMessage: { alignSelf: "flex-start", backgroundColor: "#e0e0e0" },
+    messageText: { color: "#fff" },
+    inputContainer: { flexDirection: "row", alignItems: "center", padding: 10, backgroundColor: "#ffffff" },
+    input: { flex: 1, height: 40, borderWidth: 1, borderColor: "#e0e0e0", borderRadius: 20, paddingHorizontal: 10, backgroundColor: "#f9f9f9" },
+    sendButton: { marginLeft: 10, backgroundColor: "#4caf50", padding: 10, borderRadius: 20 },
 });
 
 export default Chat;
