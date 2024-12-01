@@ -44,7 +44,7 @@ export const updateCartQuantities = async (updates) => {
 
     return response.data;
   } catch (e) {
-    throw new Error(`Error updating cart quantities: ${e.message}`);
+    throw new Error(`Error updating cart quantities: ${e}`);
   }
 };
 

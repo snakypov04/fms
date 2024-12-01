@@ -84,7 +84,14 @@ export default function Cart() {
       pendingChangesRef.current = {}; // Clear pending changes on success
     } catch (error) {
       console.error("Failed to sync pending changes:", error);
-      Alert.alert("Error", "Failed to sync changes. Try again.");
+
+      if (error.response && error.response.data) {
+        // Check if the API returned an error for insufficient stock
+        const errorMessage = error.response.data.detail || "Failed to sync changes.";
+        Alert.alert("Error", errorMessage);
+      } else {
+        Alert.alert("Error", "Failed to sync changes. Please try again.");
+      }
     }
   };
 
