@@ -1,8 +1,9 @@
 import { apiClient } from "./config";
 
-export const getProducts = async () => {
+export const getProducts = async (latitude, longitude) => {
 	try {
-		const response = await apiClient.get("/products/");
+		const response = await apiClient.get("/products?latitude=" + latitude + "&longitude=" + longitude);
+		console.log(response.data);
 		return response;
 	} catch (e) {
 		throw Error(`Error listing products: ${e}`);

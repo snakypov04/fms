@@ -1,8 +1,8 @@
 import { apiClient } from "./config";
 
-export const getFarms = async () => {
+export const getFarms = async (latitude, longitude) => {
 	try {
-		const response = await apiClient.get("/farms/my-farms");
+		const response = await apiClient.get(`farms/my-farms?latitude=${latitude}&longitude=${longitude}`);
 		console.log(response.data);
 		return response.data;
 	} catch (e) {
@@ -24,7 +24,8 @@ export const createFarm = async (data) => {
 		const response = await apiClient.post("/farms/", {
 			name: data.name,
 			address: data.address,
-			geo_loc: data.geo_loc,
+			latitude: data.latitude,
+			longitude: data.longitude,
 			size: data.size,
 			crop_types: data.crop_types,
 		});

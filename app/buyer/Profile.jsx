@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Picker } from "@react-native-picker/picker";
 import {
 	View,
@@ -10,9 +10,11 @@ import {
 	ScrollView,
 	SafeAreaView,
 	RefreshControl,
+	Alert
 } from "react-native";
 import * as ImagePicker from "expo-image-picker"; // For avatar upload
 import { getProfile, updateBuyerProfile } from "../../api/auth";
+import { useFocusEffect } from "@react-navigation/native"; // Import useFocusEffect
 
 export default function Profile() {
 	const [userData, setUserData] = useState({
@@ -24,6 +26,7 @@ export default function Profile() {
 		payment_method: "",
 		avatar: null,
 	});
+	const [errors, setErrors] = useState({});
 
 	const [refreshing, setRefreshing] = useState(false);
 
@@ -49,9 +52,11 @@ export default function Profile() {
 		}
 	};
 
-	useEffect(() => {
-		fetchProfile();
-	}, []);
+	useFocusEffect(
+		useCallback(() => {
+			fetchProfile();
+		}, [])
+	);
 
 	const onRefresh = async () => {
 		setRefreshing(true);
@@ -63,6 +68,11 @@ export default function Profile() {
 		setUserData((prevState) => ({
 			...prevState,
 			[field]: value,
+		}));
+		// Clear the error for this field
+		setErrors((prevErrors) => ({
+			...prevErrors,
+			[field]: null,
 		}));
 	};
 
@@ -93,41 +103,66 @@ export default function Profile() {
 		}
 	};
 
+	const validateFields = () => {
+		const newErrors = {};
+
+		if (!userData.first_name.trim()) newErrors.first_name = "Name is required.";
+		if (!userData.last_name.trim()) newErrors.last_name = "Surname is required.";
+		if (!userData.phone.trim()) newErrors.phone = "Phone number is required.";
+		if (!userData.delivery_address.trim())
+			newErrors.delivery_address = "Delivery address is required.";
+		if (!userData.payment_method.trim())
+			newErrors.payment_method = "Payment method is required.";
+
+		setErrors(newErrors);
+		return Object.keys(newErrors).length === 0; // Return true if no errors
+	};
+
 	// Simulate saving the profile to a database
 	const saveProfile = async () => {
+		if (!validateFields()) {
+			Alert.alert("Validation Error", "Please fill in all required fields.");
+			return;
+		}
+
 		const profileData = {
-			first_name: userData.first_name,
-			last_name: userData.last_name,
-			email: userData.email,
-			phone: userData.phone,
-			delivery_address: userData.delivery_address,
-			payment_method: userData.payment_method,
+			first_name: userData.first_name.trim(),
+			last_name: userData.last_name.trim(),
+			email: userData.email.trim(),
+			phone: userData.phone.trim(),
+			delivery_address: userData.delivery_address.trim(),
+			payment_method: userData.payment_method.trim(),
 			avatar: userData.avatar,
 		};
 
-		updateBuyerProfile(profileData);
-
-		console.log("Saving profile to database:", profileData);
-		// alert('Profile saved successfully!');
+		try {
+			await updateBuyerProfile(profileData);
+			Alert.alert("Success", "Profile saved successfully!");
+		} catch (error) {
+			console.error("Error saving profile:", error);
+			Alert.alert("Error", "Failed to save profile.");
+		}
 	};
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 20 }} refreshControl={
-				<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-			}>
-        {/* Avatar */}
-        <View style={styles.avatarContainer}>
-          <TouchableOpacity onPress={handleAvatarUpload}>
-            <Image
-              source={userData.avatar ? { uri: userData.avatar } : require('../../assets/images/default-avatar.png')}
-              style={styles.avatar}
-            />
-            <Text style={styles.avatarText}>Upload Avatar</Text>
-          </TouchableOpacity>
-        </View>
+	return (
+		<SafeAreaView style={styles.container}>
+			<ScrollView
+				contentContainerStyle={{ flexGrow: 1, padding: 20 }}
+				refreshControl={
+					<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+				}
+			>
+				<View style={styles.avatarContainer}>
+					<TouchableOpacity onPress={handleAvatarUpload}>
+						<Image
+							source={userData.avatar ? { uri: userData.avatar } : require('../../assets/images/default-avatar.png')}
+							style={styles.avatar}
+						/>
+						<Text style={styles.avatarText}>Upload Avatar</Text>
+					</TouchableOpacity>
+				</View>
 
-				{/* Profile Fields */}
+				{/* Name Field */}
 				<View style={styles.fieldContainer}>
 					<Text style={styles.label}>Name</Text>
 					<TextInput
@@ -136,7 +171,11 @@ export default function Profile() {
 						value={userData.first_name}
 						onChangeText={(text) => handleInputChange("first_name", text)}
 					/>
+					{errors.first_name && <Text style={styles.errorText}>{errors.first_name}</Text>}
+				</View>
 
+				{/* Surname Field */}
+				<View style={styles.fieldContainer}>
 					<Text style={styles.label}>Surname</Text>
 					<TextInput
 						style={styles.input}
@@ -144,14 +183,21 @@ export default function Profile() {
 						value={userData.last_name}
 						onChangeText={(text) => handleInputChange("last_name", text)}
 					/>
+					{errors.last_name && <Text style={styles.errorText}>{errors.last_name}</Text>}
+				</View>
 
+				{/* Email Field */}
+				<View style={styles.fieldContainer}>
 					<Text style={styles.label}>Email</Text>
 					<TextInput
 						style={[styles.input, styles.disabledInput]}
 						value={userData.email}
 						editable={false}
 					/>
+				</View>
 
+				{/* Phone Field */}
+				<View style={styles.fieldContainer}>
 					<Text style={styles.label}>Phone</Text>
 					<TextInput
 						style={styles.input}
@@ -159,7 +205,11 @@ export default function Profile() {
 						value={userData.phone}
 						onChangeText={(text) => handleInputChange("phone", text)}
 					/>
+					{errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+				</View>
 
+				{/* Delivery Address Field */}
+				<View style={styles.fieldContainer}>
 					<Text style={styles.label}>Delivery Address</Text>
 					<TextInput
 						style={styles.input}
@@ -167,24 +217,27 @@ export default function Profile() {
 						value={userData.delivery_address}
 						onChangeText={(text) => handleInputChange("delivery_address", text)}
 					/>
+					{errors.delivery_address && (
+						<Text style={styles.errorText}>{errors.delivery_address}</Text>
+					)}
+				</View>
 
-					<View style={styles.fieldContainer}>
-						<Text style={styles.label}>Payment Method</Text>
-						<View style={styles.pickerContainer}>
-							<Picker
-								selectedValue={userData.payment_method} // Bind to the correct state
-								onValueChange={(value) =>
-									handleInputChange("payment_method", value)
-								} // Update state on change
-								style={styles.picker}
-							>
-								<Picker.Item label="Select a payment method" value="" />
-								<Picker.Item label="Cash" value="Cash" />
-								<Picker.Item label="Card" value="Card" />
-								<Picker.Item label="QR" value="QR" />
-							</Picker>
-						</View>
-					</View>
+				{/* Payment Method Picker */}
+				<View style={styles.fieldContainer}>
+					<Text style={styles.label}>Payment Method</Text>
+					<Picker
+						selectedValue={userData.payment_method}
+						onValueChange={(value) => handleInputChange("payment_method", value)}
+						style={styles.picker}
+					>
+						<Picker.Item label="Select a payment method" value="" />
+						<Picker.Item label="Cash" value="Cash" />
+						<Picker.Item label="Card" value="Card" />
+						<Picker.Item label="QR" value="QR" />
+					</Picker>
+					{errors.payment_method && (
+						<Text style={styles.errorText}>{errors.payment_method}</Text>
+					)}
 				</View>
 
 				{/* Save Button */}
