@@ -1,128 +1,302 @@
-import React, { useState } from 'react';
-import { View, Text, FlatList, StyleSheet, Image } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  RefreshControl,
+  SafeAreaView,
+} from "react-native";
+import { getOrdersFarmer, updateOrderStatus } from "../../api/orders";
+import { useFocusEffect } from "@react-navigation/native";
 
-const OrdersPage = () => {
-  // Example hardcoded orders data
-  const exampleOrders = [
-    {
-      id: 1,
-      buyer: {
-        id: 101,
-        email: "john.doe@example.com",
-        first_name: "John",
-        last_name: "Doe",
-        phone: "+1234567890",
-        avatar: "https://via.placeholder.com/50", // Replace with real URL for testing
-        role: "Farmer",
-        info: "Frequent buyer",
-      },
-      items: "Tomatoes, Carrots, Potatoes",
-      total_price: "$35.00",
-      created_at: "2024-11-28T15:30:00.000Z",
-    },
-    {
-      id: 2,
-      buyer: {
-        id: 102,
-        email: "jane.smith@example.com",
-        first_name: "Jane",
-        last_name: "Smith",
-        phone: "+9876543210",
-        avatar: "https://via.placeholder.com/50", // Replace with real URL for testing
-        role: "Farmer",
-        info: "New buyer",
-      },
-      items: "Lettuce, Spinach, Cucumbers",
-      total_price: "$25.50",
-      created_at: "2024-11-27T10:00:00.000Z",
-    },
-  ];
+export default function OrdersPage() {
+  const [orders, setOrders] = useState([]);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const [orders] = useState(exampleOrders);
+  useFocusEffect(
+    React.useCallback(() => {
+      fetchOrders();
+    }, [])
+  );
 
-  const renderOrder = ({ item }) => (
-    <View style={styles.orderContainer}>
-      <View style={styles.buyerInfo}>
-        <Image
-          source={{ uri: item.buyer.avatar }}
-          style={styles.avatar}
-        />
-        <View>
-          <Text style={styles.buyerName}>
-            {item.buyer.first_name} {item.buyer.last_name}
-          </Text>
-          <Text style={styles.buyerEmail}>{item.buyer.email}</Text>
-          <Text style={styles.buyerPhone}>{item.buyer.phone}</Text>
-        </View>
-      </View>
-      <Text style={styles.orderDetails}>Items: {item.items}</Text>
-      <Text style={styles.orderDetails}>Total Price: {item.total_price}</Text>
-      <Text style={styles.orderDate}>
-        Ordered on: {new Date(item.created_at).toLocaleDateString()}
+  const fetchOrders = async () => {
+    try {
+      const response = await getOrdersFarmer();
+      setOrders(response.data);
+    } catch (error) {
+      console.error("Failed to fetch orders:", error);
+      Alert.alert("Error", "Failed to fetch orders. Please try again.");
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await fetchOrders();
+    setRefreshing(false);
+  };
+
+  const updateStatus = async (orderId, newStatus) => {
+    try {
+      await updateOrderStatus(orderId, newStatus);
+      Alert.alert("Success", `Order status updated to ${newStatus}.`);
+      fetchOrders(); // Refresh orders after updating status
+    } catch (error) {
+      console.error("Failed to update status:", error);
+      Alert.alert("Error", "Failed to update order status. Please try again.");
+    }
+  };
+
+  const getStatusStyle = (status) => {
+    switch (status) {
+      case "pending":
+        return styles.statusPending;
+      case "processing":
+        return styles.statusProcessing;
+      case "completed":
+        return styles.statusCompleted;
+      case "cancelled":
+        return styles.statusCancelled;
+      default:
+        return styles.statusDefault;
+    }
+  };
+
+  const renderOrderItem = (item) => (
+    <View style={styles.itemContainer}>
+      <Text style={styles.itemTitle}>{item.product.name}</Text>
+      <Text style={styles.itemCategory}>
+        Category: {item.product.category.name}
+      </Text>
+      <Text style={styles.itemQuantity}>Quantity: {item.quantity}</Text>
+      <Text style={styles.itemPrice}>
+        Price: ${parseFloat(item.price).toFixed(2)}
       </Text>
     </View>
   );
 
+  const renderOrder = ({ item }) => (
+    <View style={styles.orderContainer}>
+      <View style={styles.orderHeader}>
+        <Text style={styles.orderId}>Order ID: {item.id}</Text>
+        <Text style={[styles.orderStatus, getStatusStyle(item.status)]}>
+          {item.status.charAt(0).toUpperCase() + item.status.slice(1)}
+        </Text>
+      </View>
+      <Text style={styles.orderDate}>
+        Date: {new Date(item.created_at).toLocaleString()}
+      </Text>
+      <Text style={styles.totalPrice}>
+        Total Price: ${item.total_price.toFixed(2)}
+      </Text>
+      <Text style={styles.buyerName}>
+        Buyer: {item.buyer.first_name} {item.buyer.last_name}
+      </Text>
+      <FlatList
+        data={item.items}
+        keyExtractor={(orderItem) => orderItem.id.toString()}
+        renderItem={({ item }) => renderOrderItem(item)}
+      />
+      <View style={styles.statusButtonsContainer}>
+        {["pending", "processing", "completed", "cancelled"].map((status) => (
+          <TouchableOpacity
+            key={status}
+            style={[
+              styles.statusButton,
+              item.status === status && styles.selectedStatusButton,
+            ]}
+            onPress={() => updateStatus(item.id, status)}
+            disabled={item.status === status}
+          >
+            <Text
+              style={[
+                styles.statusButtonText,
+                item.status === status && styles.selectedStatusButtonText,
+              ]}
+            >
+              {status.charAt(0).toUpperCase() + status.slice(1)}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+
+  const renderFarm = ({ item: farm }) => (
+    <View style={styles.farmContainer}>
+      <Text style={styles.farmTitle}>{farm.name}</Text>
+      <FlatList
+        data={farm.orders}
+        keyExtractor={(order) => order.id.toString()}
+        renderItem={renderOrder}
+      />
+    </View>
+  );
+
+  const groupedOrders = Object.values(
+    orders.reduce((groups, order) => {
+      const farmId = order.farm.id;
+      if (!groups[farmId]) {
+        groups[farmId] = {
+          ...order.farm,
+          orders: [],
+        };
+      }
+      groups[farmId].orders.push(order);
+      return groups;
+    }, {})
+  );
+
   return (
     <SafeAreaView style={styles.container}>
-        <FlatList
-          data={orders}
-          keyExtractor={(order) => order.id.toString()}
-          renderItem={renderOrder}
-          contentContainerStyle={styles.listContainer}
-        />
+      <Text style={styles.title}>Your Orders</Text>
+      <FlatList
+        data={groupedOrders}
+        keyExtractor={(farm) => farm.id.toString()}
+        renderItem={renderFarm}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>No orders found for your farms.</Text>
+        }
+      />
     </SafeAreaView>
-    
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 10,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: "#f7f7f7",
   },
-  listContainer: {
-    paddingBottom: 20,
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  farmContainer: {
+    marginBottom: 20,
+  },
+  farmTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 10,
   },
   orderContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
+    borderRadius: 8,
     padding: 15,
+    marginBottom: 15,
+    elevation: 3,
+  },
+  orderHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 10,
-    borderRadius: 10,
-    elevation: 2,
   },
-  buyerInfo: {
-    flexDirection: 'row',
-    marginBottom: 10,
-  },
-  avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 10,
-  },
-  buyerName: {
+  orderId: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
+    color: "#333",
   },
-  buyerEmail: {
+  orderStatus: {
     fontSize: 14,
-    color: '#6c757d',
+    fontWeight: "bold",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    textTransform: "capitalize",
   },
-  buyerPhone: {
-    fontSize: 14,
-    color: '#6c757d',
+  statusPending: {
+    backgroundColor: "#FFEB3B",
+    color: "#333",
   },
-  orderDetails: {
-    fontSize: 14,
-    marginBottom: 5,
+  statusProcessing: {
+    backgroundColor: "#2196F3",
+    color: "#fff",
+  },
+  statusCompleted: {
+    backgroundColor: "#4CAF50",
+    color: "#fff",
+  },
+  statusCancelled: {
+    backgroundColor: "#F44336",
+    color: "#fff",
+  },
+  statusDefault: {
+    backgroundColor: "#ccc",
+    color: "#333",
   },
   orderDate: {
+    fontSize: 14,
+    color: "#555",
+    marginBottom: 10,
+  },
+  totalPrice: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#4CAF50",
+    marginBottom: 5,
+  },
+  buyerName: {
+    fontSize: 14,
+    color: "#777",
+    marginBottom: 10,
+  },
+  itemContainer: {
+    backgroundColor: "#f9f9f9",
+    borderRadius: 6,
+    padding: 10,
+    marginBottom: 10,
+  },
+  itemTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
+  },
+  itemCategory: {
     fontSize: 12,
-    color: '#6c757d',
+    color: "#555",
+  },
+  itemQuantity: {
+    fontSize: 12,
+    color: "#555",
+  },
+  itemPrice: {
+    fontSize: 12,
+    color: "#4CAF50",
+  },
+  statusButtonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginTop: 10,
+  },
+  statusButton: {
+    backgroundColor: "#ccc",
+    borderRadius: 8,
+    padding: 8,
+    marginHorizontal: 5,
+  },
+  selectedStatusButton: {
+    backgroundColor: "#4CAF50",
+  },
+  statusButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 12,
+  },
+  selectedStatusButtonText: {
+    color: "#fff",
+  },
+  emptyText: {
+    textAlign: "center",
+    color: "#999",
+    marginTop: 20,
   },
 });
-
-export default OrdersPage;
