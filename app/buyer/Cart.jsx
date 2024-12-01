@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef } from "react";
 import {
   View,
   Text,
@@ -8,8 +8,10 @@ import {
   Image,
   Alert,
   RefreshControl,
+  Modal,
 } from "react-native";
-import { getBasket, updateCartQuantities } from "../../api/products"; // Batch update API
+import { useFocusEffect } from "@react-navigation/native";
+import { apiPlaceOrder, getBasket, updateCartQuantities } from "../../api/products";
 import { SafeAreaView } from "react-native";
 
 export default function Cart() {
@@ -17,7 +19,8 @@ export default function Cart() {
   const [totalPrice, setTotalPrice] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [pendingChanges, setPendingChanges] = useState({}); // Track pending changes
+  const [checkoutModalVisible, setCheckoutModalVisible] = useState(false);
+  const pendingChangesRef = useRef({}); // Ref to track pending changes
 
   const fetchCartItems = async () => {
     try {
@@ -40,9 +43,19 @@ export default function Cart() {
     }
   };
 
-  useEffect(() => {
-    fetchCartItems();
-  }, []);
+  useFocusEffect(
+    React.useCallback(() => {
+      console.log("Cart tab focused: fetching items");
+      fetchCartItems();
+
+      return () => {
+        console.log("Cart tab unfocused: syncing pending changes");
+        if (Object.keys(pendingChangesRef.current).length > 0) {
+          syncPendingChanges();
+        }
+      };
+    }, [])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -51,14 +64,15 @@ export default function Cart() {
   };
 
   const trackPendingChange = (id, newQuantity) => {
-    setPendingChanges((prev) => ({
-      ...prev,
-      [id]: newQuantity, // Store the latest quantity for the item
-    }));
+    pendingChangesRef.current = {
+      ...pendingChangesRef.current,
+      [id]: newQuantity,
+    };
+    console.log("Updated pendingChangesRef:", pendingChangesRef.current);
   };
 
   const syncPendingChanges = async () => {
-    const changes = Object.entries(pendingChanges).map(([id, quantity]) => ({
+    const changes = Object.entries(pendingChangesRef.current).map(([id, quantity]) => ({
       id: parseInt(id),
       quantity,
     }));
@@ -67,7 +81,7 @@ export default function Cart() {
 
     try {
       await updateCartQuantities(changes); // Batch API call
-      setPendingChanges({}); // Clear pending changes on success
+      pendingChangesRef.current = {}; // Clear pending changes on success
     } catch (error) {
       console.error("Failed to sync pending changes:", error);
       Alert.alert("Error", "Failed to sync changes. Try again.");
@@ -109,6 +123,18 @@ export default function Cart() {
     }
   };
 
+  const handleCheckout = async () => {
+    await syncPendingChanges();
+    setCheckoutModalVisible(true);
+  };
+
+  const placeOrder = async () => {
+    setCheckoutModalVisible(false); // Close the modal
+    console.log("Order Placed", "Your order has been successfully placed!");
+    await apiPlaceOrder(); // Call the API to place the order
+    await fetchCartItems(); // Refresh the cart after placing the order
+  };
+
   const renderCartItem = ({ item }) => (
     <View style={styles.cartItem}>
       <Image source={{ uri: item.image }} style={styles.itemImage} />
@@ -140,11 +166,6 @@ export default function Cart() {
     </View>
   );
 
-  const handleCheckout = async () => {
-    await syncPendingChanges();
-    Alert.alert("Checkout", "Proceeding to checkout...");
-  };
-
   if (loading) {
     return (
       <View style={styles.container}>
@@ -165,7 +186,10 @@ export default function Cart() {
           cartItems.length > 0 && (
             <View style={styles.checkoutSection}>
               <Text style={styles.totalCost}>Total: ${totalPrice.toFixed(2)}</Text>
-              <TouchableOpacity style={styles.checkoutButton} onPress={handleCheckout}>
+              <TouchableOpacity
+                style={styles.checkoutButton}
+                onPress={handleCheckout}
+              >
                 <Text style={styles.checkoutButtonText}>Proceed to Checkout</Text>
               </TouchableOpacity>
             </View>
@@ -178,6 +202,33 @@ export default function Cart() {
           <Text style={styles.emptyCartText}>Your cart is empty.</Text>
         }
       />
+
+      {/* Checkout Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={checkoutModalVisible}
+        onRequestClose={() => setCheckoutModalVisible(false)} // Close modal on back press
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Confirm Your Order</Text>
+            <Text style={styles.modalTotalCost}>Total: ${totalPrice.toFixed(2)}</Text>
+            <TouchableOpacity
+              style={styles.placeOrderButton}
+              onPress={placeOrder}
+            >
+              <Text style={styles.placeOrderButtonText}>Place Order</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.cancelButton}
+              onPress={() => setCheckoutModalVisible(false)} // Close the modal
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -280,5 +331,51 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#555",
     marginTop: 50,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    width: "80%",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+    alignItems: "center",
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  modalTotalCost: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 20,
+  },
+  placeOrderButton: {
+    backgroundColor: "#4CAF50",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  placeOrderButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  cancelButton: {
+    backgroundColor: "#FF5722",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+  },
+  cancelButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });

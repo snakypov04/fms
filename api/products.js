@@ -48,3 +48,12 @@ export const updateCartQuantities = async (updates) => {
   }
 };
 
+
+export const apiPlaceOrder = async () => {
+	try {
+		const response = await apiClient.post("/orders/");
+		return response;
+	} catch (e) {
+		throw Error(`Error placing order: ${e}`);
+	}
+}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
 	View,
 	Text,
@@ -14,10 +14,13 @@ import {
 	RefreshControl,
 	Alert,
 } from "react-native";
-import { getProducts, addProductToCart, getCart, getBasket } from "../../api/products";
+import { useFocusEffect } from "@react-navigation/native";
+import {
+	getProducts,
+	addProductToCart,
+	getBasket,
+} from "../../api/products";
 import { getCategories } from "../../api/inventory";
-
-// const categories = ["All", "Fruits", "Vegetables", "Dairy", "Bakery", "Meat"];
 
 export default function Products() {
 	const [searchQuery, setSearchQuery] = useState("");
@@ -29,6 +32,19 @@ export default function Products() {
 	const [buttonScale] = useState(new Animated.Value(1)); // Button animation
 	const [refreshing, setRefreshing] = useState(false);
 	const [categories, setCategories] = useState([]);
+
+	// Fetch all data when the screen is focused
+	useFocusEffect(
+		React.useCallback(() => {
+			const fetchData = async () => {
+				await fetchProducts();
+				await fetchCartItems();
+				await fetchCategories();
+			};
+
+			fetchData(); // Call the function to fetch data
+		}, [])
+	);
 
 	const fetchProducts = async () => {
 		try {
@@ -46,15 +62,9 @@ export default function Products() {
 			setProducts(formattedProducts);
 		} catch (error) {
 			console.error("Failed to fetch products:", error);
+			Alert.alert("Error", "Failed to fetch products.");
 		}
 	};
-
-	useEffect(() => {
-		fetchProducts();
-		fetchCartItems();
-		fetchCategories();
-	}, []);
-
 
 	const fetchCategories = async () => {
 		try {
@@ -81,6 +91,7 @@ export default function Products() {
 			setCartItems(cartProductIds); // Store product IDs in the cart
 		} catch (error) {
 			console.error("Failed to fetch cart items:", error);
+			Alert.alert("Error", "Failed to fetch cart items.");
 		}
 	};
 
@@ -88,6 +99,7 @@ export default function Products() {
 		setRefreshing(true);
 		await fetchProducts();
 		await fetchCartItems();
+		await fetchCategories();
 		setRefreshing(false);
 	};
 
@@ -98,17 +110,16 @@ export default function Products() {
 				`${product.title} is already in the cart.`,
 				[
 					{
-						text: "Go to Cart",
-						onPress: () => navigation.navigate("Cart"), // Navigate to Cart tab
+						text: "Cancel",
+						style: "cancel",
 					},
-					{ text: "Cancel", style: "cancel" },
 				]
 			);
 			return;
 		}
 
 		try {
-			const response = await addProductToCart({
+			await addProductToCart({
 				product_id: product.id,
 				quantity: 1,
 			});
@@ -173,7 +184,7 @@ export default function Products() {
 						<TouchableOpacity
 							style={[
 								styles.addToCartButton,
-								isInCart && styles.alreadyAddedButton, // Apply different style if in cart
+								isInCart && styles.alreadyAddedButton,
 							]}
 							onPress={() => {
 								animateButton();
@@ -184,7 +195,7 @@ export default function Products() {
 							<Text
 								style={[
 									styles.addToCartText,
-									isInCart && styles.alreadyAddedText, // Apply different text color if in cart
+									isInCart && styles.alreadyAddedText,
 								]}
 							>
 								{isInCart ? "Already Added" : "Add to Cart"}
@@ -205,13 +216,11 @@ export default function Products() {
 				value={searchQuery}
 				onChangeText={setSearchQuery}
 			/>
-
 			<ScrollView
 				horizontal
 				showsHorizontalScrollIndicator={false}
 				style={styles.categoryRow}
 			>
-
 				{categories.map((category) => (
 					<TouchableOpacity
 						key={category.id}
@@ -224,7 +233,7 @@ export default function Products() {
 						<Text
 							style={[
 								styles.categoryButtonText,
-								selectedCategory === category &&
+								selectedCategory === category.name &&
 								styles.selectedCategoryButtonText,
 							]}
 						>
@@ -243,66 +252,7 @@ export default function Products() {
 				onRefresh={onRefresh}
 			/>
 
-			{selectedProduct && (
-				<Modal
-					animationType="slide"
-					transparent={true}
-					visible={modalVisible}
-					onRequestClose={closeModal}
-				>
-					<View style={styles.modalOverlay}>
-						<View style={styles.modalContent}>
-							<TouchableOpacity style={styles.closeButton} onPress={closeModal}>
-								<Text style={styles.closeButtonText}>X</Text>
-							</TouchableOpacity>
-							<Image source={selectedProduct.image} style={styles.modalImage} />
-							<Text style={styles.modalTitle}>{selectedProduct.title}</Text>
-							<Text style={styles.modalFarm}>{selectedProduct.farm}</Text>
-							<Text style={styles.modalCost}>
-								${selectedProduct.cost.toFixed(2)}
-							</Text>
-							<Text style={styles.modalRemaining}>
-								Remaining: {selectedProduct.remaining}
-							</Text>
-							<Text style={styles.modalDescription}>
-								{selectedProduct.description}
-							</Text>
-							<TouchableOpacity
-								style={[
-									styles.addToCartButton,
-									cartItems.includes(selectedProduct.id)
-										? styles.alreadyAddedButton
-										: styles.addToCartButton,
-								]}
-								onPress={() => {
-									if (!cartItems.includes(selectedProduct.id)) {
-										addToCart(selectedProduct);
-									} else {
-										Alert.alert(
-											"Already Added",
-											`${selectedProduct.title} is already in the cart.`
-										);
-									}
-									closeModal();
-								}}
-							>
-								<Text
-									style={[
-										styles.addToCartText,
-										cartItems.includes(selectedProduct.id) &&
-										styles.alreadyAddedText,
-									]}
-								>
-									{cartItems.includes(selectedProduct.id)
-										? "Already Added"
-										: "Add to Cart"}
-								</Text>
-							</TouchableOpacity>
-						</View>
-					</View>
-				</Modal>
-			)}
-
+			{/* Add your modal for product details here */}
 		</SafeAreaView>
 	);
 }
