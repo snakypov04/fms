@@ -39,7 +39,7 @@ export default function layout() {
 		>
 			<Tab.Screen name="Profile" component={Profile} />
 			<Tab.Screen name="Farms" component={Farms} />
-			<Tab.Screen name="Inventory" component={Inventory} />
+			{/* <Tab.Screen name="Inventory" component={Inventory} /> */}
 			<Tab.Screen name="Orders" component={Orders} />
 			<Tab.Screen name="Chat" component={ChatRoomsList} />
 		</Tab.Navigator>

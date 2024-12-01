@@ -84,9 +84,12 @@ export default function Orders() {
                 Date: {new Date(item.created_at).toLocaleString()}
             </Text>
             <Text style={styles.totalPrice}>Total Price: ${item.total_price.toFixed(2)}</Text>
-            {/* <Text style={styles.buyerName}>
-                Buyer: {item.buyer.first_name} {item.buyer.last_name}
-            </Text> */}
+            <Text style={styles.delivery}>
+                Delivery Address: {item.buyer.info.delivery_address}
+            </Text>
+            <Text style={styles.payment}>
+                Payment Method: {item.buyer.info.payment_method}
+            </Text>
             <ScrollView style={styles.itemsList}>
                 {item.items.map((orderItem) => renderOrderItem(orderItem))}
             </ScrollView>
@@ -182,6 +185,18 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: "bold",
         color: "#4CAF50",
+        marginBottom: 5,
+    },
+    delivery: {
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#324ca8",
+        marginBottom: 5,
+    },
+    payment: {
+        fontSize: 16,
+        fontWeight: "bold",
+        color: "#e32d20",
         marginBottom: 5,
     },
     buyerName: {

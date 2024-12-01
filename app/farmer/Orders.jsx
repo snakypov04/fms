@@ -91,9 +91,16 @@ export default function OrdersPage() {
       <Text style={styles.totalPrice}>
         Total Price: ${item.total_price.toFixed(2)}
       </Text>
-      <Text style={styles.buyerName}>
-        Buyer: {item.buyer.first_name} {item.buyer.last_name}
+      <Text style={styles.delivery}>
+        Delivery address: {item.buyer.info.delivery_address}
       </Text>
+      <Text style={styles.payment}>
+        Payment Method: {item.buyer.info.payment_method}
+      </Text>
+      <Text style={styles.buyerName}>
+        Buyer: {item.buyer.first_name} {item.buyer.last_name} ({item.buyer.email})
+      </Text>
+
       <FlatList
         data={item.items}
         keyExtractor={(orderItem) => orderItem.id.toString()}
@@ -245,7 +252,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   buyerName: {
-    fontSize: 14,
+    fontSize: 16,
     color: "#777",
     marginBottom: 10,
   },
@@ -298,5 +305,17 @@ const styles = StyleSheet.create({
     textAlign: "center",
     color: "#999",
     marginTop: 20,
+  },
+  delivery: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#324ca8",
+    marginBottom: 5,
+  },
+  payment: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#e32d20",
+    marginBottom: 5,
   },
 });

@@ -142,15 +142,12 @@ export const updateFarmerProfile = async (userData) => {
 			phone: userData.phone,
 			delivery_address: "dome",
 			payment_method: "Card",
-			info: {
-				rating: userData.info.rating,
-				experience: userData.info.experience,
-				bio: userData.info.bio,
-			},
-			socials: userData.socials,
+			experience: userData.info.experience,
+			bio: userData.info.bio,
 		};
 
-		// Handle avatar upload if it's present
+		console.log(updatedData)
+
 
 		// Send the updated data as JSON in the PUT request
 		const response = await apiClient.put("/profile/", updatedData, {

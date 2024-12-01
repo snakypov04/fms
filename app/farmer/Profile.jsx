@@ -8,11 +8,10 @@ import {
 	StyleSheet,
 	ScrollView,
 	SafeAreaView,
-	Linking,
+	Alert,
 } from "react-native";
 import * as ImagePicker from "expo-image-picker";
-import { Picker } from "@react-native-picker/picker"; // Import Picker
-import { getProfile, addSocials, updateFarmerProfile } from "../../api/auth";
+import { getProfile, updateFarmerProfile } from "../../api/auth";
 
 export default function FarmerProfile() {
 	const [profileData, setProfileData] = useState({
@@ -28,78 +27,106 @@ export default function FarmerProfile() {
 			experience: 0,
 			bio: "",
 		},
-		socials: [],
 	});
+	const [errors, setErrors] = useState({}); // Track validation errors
 
 	useEffect(() => {
-		// Example of fetching profile data from an API
 		const fetchProfile = async () => {
-			const data = await getProfile(); // Replace with actual API call
-			setProfileData(data);
+			try {
+				const data = await getProfile();
+				setProfileData({
+					...profileData,
+					...data,
+					info: {
+						...profileData.info,
+						...(data.info || {}),
+					},
+				});
+			} catch (error) {
+				console.error("Error fetching profile:", error.message);
+				Alert.alert("Error", "Failed to fetch profile.");
+			}
 		};
-
 		fetchProfile();
 	}, []);
 
+	const validateFields = () => {
+		const newErrors = {};
+
+		if (!profileData.first_name.trim()) newErrors.first_name = "First name is required.";
+		if (!profileData.last_name.trim()) newErrors.last_name = "Last name is required.";
+		if (!profileData.phone.trim()) newErrors.phone = "Phone number is required.";
+		if (!profileData.info.bio.trim()) newErrors.bio = "Bio is required.";
+		if (!profileData.info.experience || isNaN(profileData.info.experience))
+			newErrors.experience = "Experience must be a valid number.";
+
+		setErrors(newErrors);
+		return Object.keys(newErrors).length === 0;
+	};
+
+	const handleInputChange = (field, value) => {
+		setProfileData((prevState) => ({
+			...prevState,
+			[field]: value,
+		}));
+		setErrors((prevErrors) => ({
+			...prevErrors,
+			[field]: null,
+		}));
+	};
+
+	const handleInfoChange = (field, value) => {
+		setProfileData((prevState) => ({
+			...prevState,
+			info: {
+				...prevState.info,
+				[field]: value,
+			},
+		}));
+		setErrors((prevErrors) => ({
+			...prevErrors,
+			[field]: null,
+		}));
+	};
+
 	const handleAvatarUpload = async () => {
-		const result = await ImagePicker.launchImageLibraryAsync({
-			mediaTypes: ImagePicker.MediaTypeOptions.Images,
-			allowsEditing: true,
-			aspect: [1, 1],
-			quality: 1,
-		});
+		try {
+			const result = await ImagePicker.launchImageLibraryAsync({
+				mediaTypes: ImagePicker.MediaTypeOptions.Images,
+				allowsEditing: true,
+				aspect: [1, 1],
+				quality: 1,
+			});
 
-		if (!result.canceled) {
-			setProfileData((prevData) => ({
-				...prevData,
-				avatar: result.assets[0].uri,
-			}));
+			if (!result.canceled && result.assets && result.assets.length > 0) {
+				setProfileData((prevData) => ({
+					...prevData,
+					avatar: result.assets[0].uri,
+				}));
+			} else {
+				Alert.alert("Upload Cancelled", "No image selected.");
+			}
+		} catch (error) {
+			console.error("Error uploading avatar:", error.message);
+			Alert.alert("Error", "Failed to upload avatar.");
 		}
-	};
-
-	const addSocial = () => {
-		setProfileData((prevData) => ({
-			...prevData,
-			socials: [
-				...prevData.socials,
-				{
-					platform: "Facebook",
-					url: "",
-				},
-			],
-		}));
-	};
-
-	const updateSocial = (index, key, value) => {
-		const updatedSocials = [...profileData.socials];
-
-		updatedSocials[index][key] = value;
-		setProfileData((prevData) => ({
-			...prevData,
-			socials: updatedSocials,
-		}));
 	};
 
 	const saveProfile = async () => {
-		for (const social of profileData.socials) {
-			try {
-				console.log(social);
-				// await addSocials(social);
-			} catch (error) {
-				console.error("Error saving social:", error);
-			}
+		if (!validateFields()) {
+			Alert.alert("Validation Error", "Please correct the highlighted fields.");
+			console.log("Validation Error", "Please correct the highlighted fields.");
+			return;
 		}
 
-		updateFarmerProfile(profileData)
-
-		console.log("Saving profile to database:", profileData);
-		alert("Profile saved successfully!");
-	};
-
-	const openSocialLink = (url) => {
-		Linking.openURL(url).catch((err) =>
-			console.error("Failed to open URL:", err)
-		);
+		try {
+			await updateFarmerProfile(profileData);
+			console.log("Profile updated successfully!");
+			Alert.alert("Success", "Profile updated successfully!");
+		} catch (error) {
+			console.error("Error saving profile:", error);
+			Alert.alert("Error", "Failed to save profile.");
+		}
 	};
 
 	return (
@@ -108,123 +135,63 @@ export default function FarmerProfile() {
 				{/* Avatar Section */}
 				<View style={styles.avatarContainer}>
 					<TouchableOpacity onPress={handleAvatarUpload}>
-						{/* <Image
-							source={avatar ? { uri: avatar } : require('../../assets/images/default-avatar.png')}
+						<Image
+							source={
+								profileData.avatar
+									? { uri: profileData.avatar }
+									: require("../../assets/images/default-avatar.png")
+							}
 							style={styles.avatar}
-						/> */}
+						/>
 						<Text style={styles.avatarText}>Upload Avatar</Text>
 					</TouchableOpacity>
 				</View>
 
-				{/* Profile Fields */}
+				{/* Input Fields */}
+				{["first_name", "last_name", "phone"].map((field) => (
+					<View style={styles.fieldContainer} key={field}>
+						<Text style={styles.label}>
+							{field.replace("_", " ").toUpperCase()}
+						</Text>
+						<TextInput
+							style={styles.input}
+							placeholder={`Enter your ${field.replace("_", " ")}`}
+							value={profileData[field]}
+							onChangeText={(text) => handleInputChange(field, text)}
+						/>
+						{errors[field] && (
+							<Text style={styles.errorText}>{errors[field]}</Text>
+						)}
+					</View>
+				))}
+
+				{/* Bio Field */}
 				<View style={styles.fieldContainer}>
-					<Text style={styles.label}>First Name</Text>
-					<TextInput
-						style={styles.input}
-						placeholder="Enter your first name"
-						value={profileData.first_name ?? ""}
-						onChangeText={(text) =>
-							setProfileData((prevData) => ({ ...prevData, first_name: text }))
-						}
-					/>
-
-					<Text style={styles.label}>Last Name</Text>
-					<TextInput
-						style={styles.input}
-						placeholder="Enter your last name"
-						value={profileData.last_name ?? ""}
-						onChangeText={(text) =>
-							setProfileData((prevData) => ({ ...prevData, last_name: text }))
-						}
-					/>
-
-					<Text style={styles.label}>Email</Text>
-					<TextInput
-						style={[styles.input, styles.disabledInput]}
-						value={profileData.email ?? ""}
-						editable={false}
-					/>
-
-					<Text style={styles.label}>Phone</Text>
-					<TextInput
-						style={styles.input}
-						placeholder="Enter your phone number"
-						value={profileData.phone ?? ""}
-						onChangeText={(text) =>
-							setProfileData((prevData) => ({ ...prevData, phone: text }))
-						}
-					/>
-
 					<Text style={styles.label}>Bio</Text>
 					<TextInput
 						style={styles.input}
 						placeholder="Enter your bio"
-						value={profileData.info.bio ?? ""}
-						onChangeText={(text) =>
-							setProfileData((prevData) => ({
-								...prevData,
-								info: { ...prevData.info, bio: text },
-							}))
-						}
+						value={profileData.info.bio}
+						onChangeText={(text) => handleInfoChange("bio", text)}
 					/>
+					{errors.bio && <Text style={styles.errorText}>{errors.bio}</Text>}
+				</View>
 
+				{/* Experience Field */}
+				<View style={styles.fieldContainer}>
 					<Text style={styles.label}>Experience (Years)</Text>
 					<TextInput
 						style={styles.input}
 						placeholder="Enter your experience"
-						value={String(profileData.info.experience) ?? ""}
+						value={String(profileData.info.experience)}
 						keyboardType="numeric"
 						onChangeText={(value) =>
-							setProfileData((prevData) => ({
-								...prevData,
-								info: { ...prevData.info, experience: Number(value) },
-							}))
+							handleInfoChange("experience", parseInt(value, 10) || 0)
 						}
 					/>
-
-					<Text style={styles.label}>Rating</Text>
-					<TextInput
-						style={styles.input}
-						placeholder="Enter your rating"
-						value={String(profileData.info.rating) ?? ""}
-						keyboardType="numeric"
-						onChangeText={(value) =>
-							setProfileData((prevData) => ({
-								...prevData,
-								info: { ...prevData.info, rating: Number(value) },
-							}))
-						}
-					/>
-				</View>
-
-				{/* Social Links */}
-				<View style={styles.fieldContainer}>
-					<Text style={styles.label}>Social Links</Text>
-					{profileData.socials.map((social, index) => (
-						<View key={index} style={styles.socialRow}>
-							<Picker
-								selectedValue={social.platform}
-								style={styles.picker}
-								onValueChange={(value) =>
-									updateSocial(index, "platform", value)
-								}
-							>
-								<Picker.Item label="Facebook" value="Facebook" />
-								<Picker.Item label="Instagram" value="Instagram" />
-								<Picker.Item label="Twitter" value="Twitter" />
-								<Picker.Item label="LinkedIn" value="LinkedIn" />
-							</Picker>
-							<TextInput
-								style={[styles.input, styles.socialInput]}
-								placeholder="URL (e.g., https://facebook.com)"
-								value={social.url ?? ""}
-								onChangeText={(value) => updateSocial(index, "url", value)}
-							/>
-						</View>
-					))}
-					<TouchableOpacity style={styles.addSocialButton} onPress={addSocial}>
-						<Text style={styles.addSocialButtonText}>Add Social Link</Text>
-					</TouchableOpacity>
+					{errors.experience && (
+						<Text style={styles.errorText}>{errors.experience}</Text>
+					)}
 				</View>
 
 				{/* Save Button */}
@@ -238,9 +205,9 @@ export default function FarmerProfile() {
 
 const styles = StyleSheet.create({
 	container: {
+		flex: 1,
 		padding: 20,
 		backgroundColor: "#f7f7f7",
-		flex: 1,
 	},
 	avatarContainer: {
 		alignItems: "center",
@@ -275,33 +242,13 @@ const styles = StyleSheet.create({
 		borderWidth: 1,
 		borderRadius: 8,
 		paddingHorizontal: 10,
-		marginBottom: 15,
+		marginBottom: 5,
 		backgroundColor: "#fff",
 	},
-	disabledInput: {
-		backgroundColor: "#e0e0e0",
-		color: "#999",
-	},
-	socialRow: {
-		flexDirection: "row",
-		justifyContent: "space-between",
-		marginBottom: 10,
-	},
-	socialInput: {
-		flex: 1,
-		marginHorizontal: 5,
-	},
-	addSocialButton: {
-		backgroundColor: "#4CAF50",
-		padding: 10,
-		borderRadius: 8,
-		alignItems: "center",
-		marginTop: 10,
-	},
-	addSocialButtonText: {
-		color: "#fff",
-		fontSize: 16,
-		fontWeight: "bold",
+	errorText: {
+		color: "red",
+		fontSize: 12,
+		marginTop: 2,
 	},
 	saveButton: {
 		backgroundColor: "#4CAF50",
