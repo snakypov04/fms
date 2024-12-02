@@ -30,7 +30,7 @@ export default function Login() {
         setLoginError('Unexpected role: ' + role);
       }
     } catch (error) {
-      console.error(error);
+      // console.error(error);
       if (error.response && error.response.status === 401) {
         // If status code 401, email or password is incorrect
         setLoginError('Email or password is incorrect');
