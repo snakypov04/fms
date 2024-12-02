@@ -11,6 +11,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams } from "expo-router";
 import { getMessages } from "../../api/chat";
 import { getData } from "../../utils/asyncStorage";
+import { wsUrl } from "../../api/config";
 
 const Chat = () => {
 	const { roomName } = useLocalSearchParams();
@@ -48,7 +49,7 @@ const Chat = () => {
 
 	const connectWebSocket = async () => {
 		const token = await getData("access");
-		const url = `ws://localhost:8000/ws/chat/${roomName}/?token=${token}`;
+		const url = `${wsUrl}/ws/chat/${roomName}/?token=${token}`;
 		ws.current = new WebSocket(url);
 
 		ws.current.onopen = () => {
