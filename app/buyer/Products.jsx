@@ -8,8 +8,8 @@ import {
 	StyleSheet,
 	SafeAreaView,
 	Alert,
-	Picker,
 } from "react-native";
+import { Picker } from "@react-native-picker/picker";
 import { useFocusEffect } from "@react-navigation/native";
 import { getProducts, addProductToCart, getBasket } from "../../api/products";
 import { getCategories } from "../../api/inventory";
