@@ -15,7 +15,7 @@ export const login = async (email, password) => {
 
 		return { refresh, access };
 	} catch (error) {
-		console.error("Error fetching tokens:", error.message);
+		//console.error("Error fetching tokens:", error.message);
 		throw error;
 	}
 };

@@ -166,7 +166,7 @@ const FarmDetails = () => {
 	}
 
 	return (
-		<ScrollView style={styles.container}>
+		<ScrollView style={styles.container} nestedScrollEnabled={true}>
 			{/* Farm Details */}
 			<View style={styles.header}>
 				<Image
