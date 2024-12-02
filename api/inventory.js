@@ -2,14 +2,16 @@ import { apiClient } from "./config";
 
 export const addProductToInventory = async (data) => {
 	try {
+		console.log("what", data)
 		const response = await apiClient.post("/products/", {
 			name: data.name,
 			description: data.description,
 			price: data.price,
 			stock_quantity: data.stock_quantity,
 			category: data.category,
-			farm: data.farm_id,
+			farm: data.farm,
 		});
+		console.log("response", response)
 
 		if (response.status === 403) {
 			throw Error(`You are not owner`);

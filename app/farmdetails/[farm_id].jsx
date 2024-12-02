@@ -33,7 +33,7 @@ const FarmDetails = () => {
 	const [modalVisible, setModalVisible] = useState(false);
 	const [editMode, setEditMode] = useState(false);
 	const [productData, setProductData] = useState({
-		id: null, // Include ID for updating
+		//id: null, // Include ID for updating
 		name: "",
 		description: "",
 		price: "",
